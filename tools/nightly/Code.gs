@@ -11,7 +11,7 @@
  */
 var PROJECT_ID = "atlas-bae05";
 var TZ = "America/New_York";
-var SITE_URL = "https://management89.github.io/Atlas/";
+var SITE_URL = "https://alexanderh8809-oss.github.io/Atlas/";
 var STATS_HOURS = [5, 12, 16];
 var PUSH_HOUR = 7;
 var DIGEST = { day: 0, hour: 17, capPerRun: 90 };   // Sunday; Gmail accounts can send to about 100 people a day
