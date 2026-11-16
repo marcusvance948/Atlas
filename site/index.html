@@ -172,6 +172,43 @@ main{padding:0;min-width:0}
 .post h3{font-size:23px;font-weight:800;letter-spacing:-.015em}
 .post p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;max-width:68ch;font-size:16px}
 .post .meta{display:flex;align-items:center;gap:6px 14px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.post{position:relative}
+.post.lv-important,.post.lv-popup{border-left:5px solid var(--bad)}
+.post.pinned.lv-important,.post.pinned.lv-popup{border-left:0;border-top-color:var(--bad)}
+.p-head{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.p-head time{white-space:nowrap}
+.p-new{display:inline-flex;align-items:center;gap:5px;font-weight:700;color:var(--info);font-size:13px}
+.p-new::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--info)}
+.p-body{max-width:68ch;overflow-wrap:anywhere;font-size:16px}
+.p-body p{margin:0 0 10px}.p-body p:last-child,.p-body ul:last-child{margin-bottom:0}
+.p-body ul{margin:0 0 10px;padding-left:20px}.p-body li{margin:2px 0}
+.p-body a{color:var(--info);font-weight:600}
+.p-body.clamp{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.post .more{align-self:flex-start;background:none;border:0;padding:0;color:var(--info);font-weight:700;cursor:pointer;font-size:15px}
+.p-foot{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;font-size:14px;color:var(--muted);border-top:1px solid var(--rule);padding-top:10px;margin-top:auto}
+.alert-bar{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap;background:var(--bad-soft);color:var(--ink);border-left:5px solid var(--bad);padding:12px 14px 12px 16px;border-radius:0 6px 6px 0;margin:0 0 18px}
+.alert-bar a{color:var(--ink);font-weight:800;text-decoration:none;flex:1 1 220px;min-width:0}
+.alert-bar a:hover{text-decoration:underline}
+.alert-bar .x{border:0;background:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:3px}
+.alert-bar .x:hover{color:var(--ink);background:var(--rail-hover)}
+.ann-bar{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px}.ann-bar input{flex:1 1 240px;min-width:0}.ann-bar select{flex:0 0 auto}
+.ann-bar input,.ann-bar select{border:1.5px solid var(--rule);background:var(--surface);border-radius:3px;padding:8px 10px;color:var(--ink)}
+.sheet.pop{border-top-color:var(--bad);width:min(520px,100%)}
+.sheet.pop h2{margin:10px 0 12px}
+.sheet.pop .p-body{margin-bottom:18px}
+.lunch{border-top:6px solid var(--rail);border-radius:0 0 6px 6px}
+.lunch-top{display:flex;align-items:baseline;gap:10px}.lunch-top .sub{margin-left:auto}
+.ldays{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:12px 0 14px}
+.ldays button{border:1.5px solid var(--rule);background:transparent;border-radius:3px;padding:5px 0;font-weight:700;font-size:13px;cursor:pointer;color:var(--muted);display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.ldays button small{font-size:16px;color:var(--ink);font-weight:800}
+.ldays button.is-today{border-color:var(--ink)}
+.ldays button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--ground)}
+.ldays button[aria-selected="true"] small{color:var(--ground)}
+.dish-k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dish{font-size:21px;font-weight:800;letter-spacing:-.01em;line-height:1.2;margin:2px 0 0;text-wrap:balance}
+.lunch dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:7px 12px;margin:14px 0 0;font-size:14.5px}
+.lunch dt{color:var(--muted);font-weight:700}.lunch dd{margin:0}
+.lunch .fine{font-size:13px;color:var(--muted);margin:14px 0 0}
 
 /* split views */
 .split{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px;align-items:start}
@@ -1102,7 +1139,7 @@ function renderMe(){
   b.innerHTML=`${img}<div class="grow"><div class="title">${esc((d&&d.name)||me.name||"You")}</div><div class="sub">${esc(role)}</div></div>${window.__signOut?`<button class="btn sm ghost" data-act="signout">Sign out</button>`:""}`;
 }
 function render(){
-  ensureData();
+  ensureData();setTimeout(maybePopup,0);
   if(inboxOpen)drawInbox();
   renderNav();renderMe();maybeReveal();if(archiveYear!=null)drawArchive();
   {const wb=$("#workBar"),w=gal&&gal.work&&S.posts.find(x=>x.id===gal.work);if(wb&&w)wb.innerHTML=workBar(w)}
@@ -1124,6 +1161,7 @@ function render(){
   if(preview&&canCouncil())banner=`<div class="banner preview"><span>You're seeing the site the way students see it.</span><button class="btn sm" data-act="mode" data-to="council">Back to council view</button></div>`+banner;
   if(lockedOut())banner+=`<div class="banner">You're signed in as ${esc(me.email||"an account")}, which isn't on the Avenues student list. Sign in with your school email, or ask Student Council to add you.</div>`;
   const VIEWFN={bulletin,events:exploreTab,calendar:exploreTab,clubs:exploreTab,opportunities:exploreTab,officehours:exploreTab,play:playPage,stuco:stucoPage,suggestions:stucoPage,lost:stucoPage,voice:stucoPage,working:stucoPage,myspace:mySpaceView,overview,tasks:()=>tasks(),proposals,attendance,members,history:historyView};
+  if(!council()&&shownView()!=="bulletin")banner=alertBar()+banner;
   $("#main").innerHTML=banner+VIEWFN[shownView()]();
   $("#bandH1").innerHTML=pageHead.title||"";const bc=$("#bandCtx");bc.innerHTML=pageHead.context||"";bc.hidden=!pageHead.context;
   const sn=$("#main .subnav"),bs=$("#bandSub");bs.innerHTML="";if(sn)bs.appendChild(sn);
@@ -1253,7 +1291,7 @@ function taskCard(t,st,i){
 }
 
 /* bulletin */
-function sortedPosts(){return S.bulletin.filter(p=>!p.removed).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.date||"").localeCompare(a.date||""))}
+function sortedPosts(){return S.bulletin.filter(p=>!p.removed&&!p.menu&&(!p.until||p.until>=TODAY||p.pinned)).sort((a,b)=>(isImportant(b)?2:b.pinned?1:0)-(isImportant(a)?2:a.pinned?1:0)||(b.date||"").localeCompare(a.date||""))}
 
 /* ---------- suggestions ---------- */
 function allSuggestions(){const out=[];for(const d of S.suggestions)for(const[k,v]of Object.entries(d.items||{}))if(v&&v.title)out.push({...v,key:k,uid:d.id});return out.sort((a,b)=>(b.at||"").localeCompare(a.at||""))}
@@ -1290,14 +1328,43 @@ const HOSTED=!!window.__signIn;
 const needAccess=what=>HOSTED?`<button class="btn sm" data-act="signin">Sign in</button> to ${what}.`:`To ${what}, you need contributor access to this page. Ask any Student Council member.`;
 
 /* Student Hub */
-function postCard(p){return`<article class="post ${p.pinned?"pinned":""}"><div class="meta"><span class="chip ${({Event:"gold",Opportunity:"good",Reminder:"bad","Schedule change":"bad",Spirit:"accent",Sports:"good",Lunch:"gold"})[p.tag]||""}">${esc(p.tag||"Announcement")}</span><span>${esc(longd(p.date))}</span>${p.pinned?`<span class="chip gold">Pinned</span>`:""}</div><h3>${esc(p.title)}</h3><p>${esc(p.body)}</p><div class="meta">${p.author?`Posted by ${who(p.author,"")}`:"Posted by Student Council"}<span class="sp"></span>${heartBtn(p.id)}${canAct()?`<button class="btn sm ghost" data-act="edit-post" data-id="${p.id}">Edit</button>`:""}</div></article>`}
-function bulletin(){
-  const posts=sortedPosts(),pinned=posts.filter(p=>p.pinned),groups=[];
-  for(const p of posts.filter(p=>!p.pinned)){const k=weekStart(p.date);let g=groups.find(x=>x.k===k);if(!g)groups.push(g={k,items:[]});g.items.push(p)}
-  return head("Official announcements for the whole school, collected week by week.","Announcements",addBtn("add-post","New post"))+
-  (posts.length?(pinned.length?`<div class="posts">${pinned.map(postCard).join("")}</div>`:"")+groups.map(g=>`<section class="panel"><h2>${g.k===weekStart(TODAY)?"This week":"Week of "+esc(fmt(g.k,{month:"long",day:"numeric"}))}</h2><div class="posts" style="margin-top:12px">${g.items.map(postCard).join("")}</div></section>`).join("")
+/* Announcements. Patterns borrowed from big sites: scannable cards with a category, relative date and "New" marker
+   (Google Classroom, Linear changelog), short previews with Read more (Slack, LinkedIn), simple formatting (Notion),
+   a dismissible banner for important news (GitHub, Stripe), and a one-time pop-up kept for the biggest news (Notion,
+   Intercom). Levels: normal, important (red banner and border), popup (banner plus a one-time pop-up). */
+const LEVELS=[["normal","Normal"],["important","Important: red banner at the top of the site"],["popup","Big news: also a pop-up for everyone, once"]];
+const POST_CHIP={Event:"gold",Opportunity:"good",Reminder:"bad","Schedule change":"bad",Spirit:"accent",Sports:"good",Lunch:"gold"};
+const ls={get(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const NEW_SINCE=(()=>{const v=ls.get("atlas.lastVisit");ls.set("atlas.lastVisit",new Date().toISOString());return v||""})();
+let openPosts=new Set(),annQ="",annTag="all",popDone=false;
+const postAt=p=>p.at||p.created||(p.date?p.date+"T07:00:00":"");
+const isNewPost=p=>!!NEW_SINCE&&postAt(p)>NEW_SINCE;
+const daysAgo=d=>d?Math.round((parse(TODAY)-parse(d))/864e5):99;
+const isImportant=p=>(p.level==="important"||p.level==="popup")&&!p.removed&&(!p.until||p.until>=TODAY)&&daysAgo(p.date)<=14&&daysAgo(p.date)>=0;
+function relDay(d){const n=daysAgo(d);if(!d)return"";if(n===0)return"Today";if(n===1)return"Yesterday";if(n===-1)return"Tomorrow";if(n>1&&n<7)return fmt(d,{weekday:"long"});return longd(d)}
+function fmtBody(t){const inl=x=>esc(x).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/https:\/\/[^\s<]+[^\s<.,;:!?)]/g,u=>`<a href="${u}" target="_blank" rel="noopener">${u.replace(/^https:\/\/(www\.)?/,"")}</a>`);
+  return String(t||"").trim().split(/\n\s*\n/).map(b=>{const l=b.split("\n").filter(x=>x.trim());return l.length&&l.every(x=>/^\s*[-•*]\s+/.test(x))?`<ul>${l.map(x=>`<li>${inl(x.replace(/^\s*[-•*]\s+/,""))}</li>`).join("")}</ul>`:`<p>${l.map(x=>inl(x.trim())).join("<br>")}</p>`}).join("")}
+function postCard(p){const lv=p.level||"normal",body=p.body||"",long=body.length>300||body.split("\n").length>6,open=openPosts.has(p.id),link=safeUrl(p.link);
+  return`<article class="post ${p.pinned?"pinned":""} lv-${esc(lv)}"><div class="p-head"><span class="chip ${POST_CHIP[p.tag]||""}">${esc(p.tag||"Announcement")}</span>${lv!=="normal"?`<span class="chip bad">Important</span>`:""}${p.pinned?`<span class="chip gold">Pinned</span>`:""}${isNewPost(p)?`<span class="p-new">New</span>`:""}<span class="sp"></span><time datetime="${esc(p.date||"")}" title="${esc(longd(p.date))}">${esc(relDay(p.date))}</time></div>
+  <h3>${esc(p.title)}</h3><div class="p-body ${long&&!open?"clamp":""}" id="pb-${esc(p.id)}">${fmtBody(body)}</div>${long?`<button class="more" data-act="post-more" data-id="${esc(p.id)}" aria-expanded="${open}" aria-controls="pb-${esc(p.id)}">${open?"Show less":"Read more"}</button>`:""}
+  ${link?`<div><a class="btn sm primary" href="${esc(link)}" target="_blank" rel="noopener">${esc(p.linkLabel||"Learn more")}</a></div>`:""}
+  <div class="p-foot">${p.author?who(p.author,""):`<span class="who">Student Council</span>`}${p.auto?`<span title="Posted automatically from the school's schedule">Automatic</span>`:""}<span class="sp"></span>${heartBtn(p.id)}${canAct()?`<button class="btn sm ghost" data-act="edit-post" data-id="${esc(p.id)}">Edit</button>`:""}</div></article>`}
+function alertBar(){const hidden=ls.get("atlas.hiddenAlerts")||[],p=sortedPosts().filter(isImportant).sort((a,b)=>postAt(b).localeCompare(postAt(a))).find(x=>!hidden.includes(x.id));if(!p)return"";
+  return`<div class="alert-bar" role="status"><span class="chip bad">Important</span><a href="#bulletin">${esc(p.title)}</a><button class="x" data-act="alert-x" data-id="${esc(p.id)}" aria-label="Hide this notice">×</button></div>`}
+function maybePopup(){if(popDone||!loaded.has("bulletin")||council()||!$("#modal").hidden)return;const seen=ls.get("atlas.popups")||[],p=sortedPosts().find(x=>x.level==="popup"&&isImportant(x)&&!seen.includes(x.id));if(!p)return;popDone=true;
+  ls.set("atlas.popups",[...seen,p.id].slice(-50));const link=safeUrl(p.link),m=$("#modal");
+  m.innerHTML=`<div class="sheet pop" role="dialog" aria-modal="true" aria-labelledby="popT"><div class="p-head"><span class="chip ${POST_CHIP[p.tag]||""}">${esc(p.tag||"Announcement")}</span><span class="chip bad">Important</span><span class="sp"></span><time>${esc(relDay(p.date))}</time></div><h2 id="popT">${esc(p.title)}</h2><div class="p-body">${fmtBody(p.body)}</div><div class="mactions"><button class="btn ghost" data-act="pop-all">All announcements</button><span class="sp"></span>${link?`<a class="btn" href="${esc(link)}" target="_blank" rel="noopener">${esc(p.linkLabel||"Learn more")}</a>`:""}<button class="btn primary" data-act="pop-close">Got it</button></div></div>`;
+  m.hidden=false;const ok=m.querySelector(".btn.primary");ok&&ok.focus()}
+function bulletin(){const tags=[...new Set(sortedPosts().map(p=>p.tag||"Announcement"))].sort();
+  return head("Official announcements for the whole school. Important news stays at the top for two weeks.","Announcements",addBtn("add-post","New post"))+
+  (sortedPosts().length?`<div class="ann-bar"><input id="annQ" type="search" placeholder="Search announcements" aria-label="Search announcements" value="${esc(annQ)}"><select id="annTag" aria-label="Category"><option value="all">All categories</option>${tags.map(t=>`<option ${annTag===t?"selected":""}>${esc(t)}</option>`).join("")}</select></div><div id="annList">${annList()}</div>`
   :empty("The bulletin is empty","Post announcements, schedule changes, spirit week themes and anything else the school should know.","add-post","Write the first post"));
 }
+function annList(){const q=annQ.trim().toLowerCase(),posts=sortedPosts().filter(p=>(annTag==="all"||(p.tag||"Announcement")===annTag)&&(!q||((p.title||"")+" "+(p.body||"")).toLowerCase().includes(q)));
+  if(!posts.length)return empty("Nothing matches","Try a different word or category.");
+  const top=posts.filter(p=>p.pinned||isImportant(p)),rest=posts.filter(p=>!top.includes(p)),groups=[];
+  for(const p of rest){const k=weekStart(p.date);let g=groups.find(x=>x.k===k);if(!g)groups.push(g={k,items:[]});g.items.push(p)}
+  return(top.length?`<div class="posts" style="margin-bottom:20px">${top.map(postCard).join("")}</div>`:"")+groups.map(g=>`<section class="panel"><h2>${g.k===weekStart(TODAY)?"This week":"Week of "+esc(fmt(g.k,{month:"long",day:"numeric"}))}</h2><div class="posts" style="margin-top:12px">${g.items.map(postCard).join("")}</div></section>`).join("")}
 
 /* Events and sign-ups */
 const SIGNUP_KINDS=[["none","No sign-up"],["rsvp","RSVP"],["signup","Sign up"],["register","Register"],["tickets","Reserve a ticket"]];
@@ -1518,8 +1585,17 @@ function ohAll(q,hit){const l=OFFICE_HOURS.filter(t=>hit(t));/* already in last-
   return l.length?`<section class="panel"><ul class="list">${l.map(t=>`<li><div class="grow"><div class="title">${esc(t.name)}</div><div class="sub">${t.slots.slice().sort((a,b)=>a.day-b.day).map(s=>`Day ${s.day}, ${esc(ohTime(s.time))}, ${esc(s.room)}`).join(" · ")}</div></div></li>`).join("")}</ul></section>`:empty("Nothing matches","Try a different name or room.")}
 function ohPanel(){const td=schoolDay();if(!td)return"";const l=ohToday(),am=l.filter(s=>ohMins(s.time)<12*60).length;
   return`<section class="panel"><h2>Office hours today <a href="#officehours">See all</a></h2><p class="sub" style="margin:8px 0 0">Today is <b>Day ${td}</b>. ${l.length?`${l.length} teachers have office hours: ${am} before school, ${l.length-am} after.`:"No office hours today."}</p></section>`}
-function lunchPanel(){const p=S.bulletin.find(x=>!x.removed&&x.menu&&x.menu[TODAY]);if(!p)return"";const o=p.menu[TODAY];
-  return`<section class="panel"><h2>Lunch today <a href="#bulletin">This week</a></h2><div style="margin-top:8px"><div class="title">${esc(o.entree||"See the menu")}</div>${o.veg&&o.veg!==o.entree?`<div class="sub">Vegetarian: ${esc(o.veg)}</div>`:""}${o.sides?`<div class="sub">Sides: ${esc(o.sides)}</div>`:""}${o.sandwich?`<div class="sub">Sandwich: ${esc(o.sandwich)}</div>`:""}</div></section>`}
+let lunchSel="";
+function lunchMenu(){const all={};for(const p of S.bulletin)if(!p.removed&&p.menu)Object.assign(all,p.menu);
+  let wk=weekStart(TODAY);const wkDays=w=>Object.keys(all).filter(d=>d>=w&&d<=iso(addDays(parse(w),6))).sort();
+  if(parse(TODAY).getDay()%6===0){const nx=iso(addDays(parse(wk),7));if(wkDays(nx).length)wk=nx}
+  const days=wkDays(wk);if(!days.length)return"";
+  const sel=days.includes(lunchSel)?lunchSel:days.includes(TODAY)?TODAY:days.find(d=>d>TODAY)||days[0],o=all[sel]||{},wd=d=>fmt(d,{weekday:"short"});
+  return`<section class="panel lunch" id="sec-lunch"><div class="lunch-top"><h2>Lunch</h2><span class="sub">${sel===TODAY?"Today":esc(fmt(sel,{weekday:"long",month:"short",day:"numeric"}))}</span></div>
+  <div class="ldays" role="tablist" aria-label="Day">${days.map(d=>`<button role="tab" aria-selected="${d===sel}" class="${d===TODAY?"is-today":""}" data-act="lunch-day" data-to="${d}"><span>${esc(wd(d))}</span><small>${parse(d).getDate()}</small></button>`).join("")}</div>
+  <div class="dish-k">Main</div><div class="dish">${esc(o.entree||"See the menu")}</div>
+  <dl>${o.veg&&o.veg!==o.entree?`<dt>Vegetarian</dt><dd>${esc(o.veg)}</dd>`:""}${o.sides?`<dt>Sides</dt><dd>${esc(o.sides)}</dd>`:""}${o.sandwich?`<dt>Sandwich</dt><dd>${esc(o.sandwich)}</dd>`:""}</dl>
+  <p class="fine">Soup, salads, fruit and yogurt every day. Allergens are listed at each service line.</p></section>`}
 /* Student Voice */
 const myVotes=()=>(S.votes.find(d=>d.id===me.id)||{}).polls||{};
 const pollOpen=p=>p.status!=="closed"&&(!p.closes||p.closes>=TODAY);
@@ -1796,7 +1872,7 @@ function todayBody(){
   const posts=sortedPosts().slice(0,3),ch=scheduleChanges(),feat=postsOf(["create"]).length?homeFeat():"",albums=sortedAlbums(),reel=winReel(THIS_YEAR,true);
   const tools=canAct()?`<div class="toolbar today-tools"><button class="btn" data-act="add-post">+ Announcement</button><button class="btn" data-act="add-event">+ Event</button><button class="btn" data-act="add-album">+ Photo album</button><button class="btn" data-act="add-story">+ Story or meme</button><button class="btn" data-act="add-aviator">+ Aviator of the Week</button></div>`:"";
   const feed=feedView();
-  return tools+`<div class="today">
+  return alertBar()+tools+`<div class="today">
   <div class="t-up">${comingUp()}</div>
   <div class="t-main">
     ${ch.length?`<section class="changes"><h2>Changes to know about</h2><ul>${ch.map(c=>`<li><b>${esc(c.title)}</b><span>${esc(c.text)}</span></li>`).join("")}</ul></section>`:""}
@@ -1805,7 +1881,7 @@ function todayBody(){
     ${feat?`<section class="panel"><h2>Made at Avenues</h2><div class="home-feat">${feat}</div></section>`:""}
     <section class="panel today-feed"><h2>Community</h2>${feed}</section>
   </div>
-  <div class="t-rest">${lunchPanel()}${ohPanel()}${installCard("today")}${winnersPanel()}<section class="panel">${raceMini()}</section>${bdayPanel()}${playlistPanel()}</div>
+  <div class="t-rest">${lunchMenu()}${ohPanel()}${installCard("today")}${winnersPanel()}<section class="panel">${raceMini()}</section>${bdayPanel()}${playlistPanel()}</div>
   </div>
   ${albums.length?`<section class="panel" id="sec-photos"><h2>Around Avenues</h2><div style="margin-top:12px">${beltsHTML(2)}</div>${canAct()?`<div class="albums">${albums.map(albumCard).join("")}</div>`:""}</section>`:`<span id="sec-photos"></span>`}
   ${reel?`<section class="home-reel"><div class="home-reel-head"><h2>Student Council lately</h2><a href="#working">See everything we've done</a></div>${reel}</section>`:""}`;
@@ -2282,7 +2358,7 @@ async function autoPost(id,post,extra){const ref=col("bulletin").doc(id),cur=awa
   await ref.set({...(old||{}),...post,...extra,autoBody:post.body,auto:true,date:(old&&old.date)||extra.date||TODAY,author:(old&&old.author)||"",pinned:!!(old&&old.pinned),at:(old&&old.at)||new Date().toISOString()})}
 async function postAuto(){
   if(gamesTried||!db||!canCouncil()||!canWrite||typeof fetch!=="function")return;gamesTried=true;
-  try{const r=await fetch(ATHLETICS_URL,{cache:"no-cache"});if(r.ok){const games=gameDayGames(await r.json(),TODAY);await autoPost("gameday-"+TODAY,games.length?gameDayPost(games):null,{games,tag:"Sports"})}
+  try{const r=await fetch(ATHLETICS_URL,{cache:"no-cache"});if(r.ok){const games=gameDayGames(await r.json(),TODAY);await autoPost("gameday-"+TODAY,games.length?gameDayPost(games):null,{games,tag:"Sports",level:games.some(g=>g.final)?"important":"normal"})}
     await autoPost("homegames-"+weekStart(TODAY),null,{})/* retire the old weekly post (only if nobody edited it) */}catch(e){}
   try{const m=await lunchWeek();if(m)await autoPost("lunch-"+m.week,lunchPost(m),{menu:m.days,tag:"Lunch",date:m.week<TODAY?TODAY:m.week})}catch(e){}
 }
@@ -2574,7 +2650,7 @@ function exploreTab(){const cur=shownView();
   return subnav([["events","Events",["calendar"]],["clubs","Clubs"],["opportunities","Opportunities"],["officehours","Office hours"]])+(cur==="clubs"?clubsView():cur==="opportunities"?oppsView():cur==="officehours"?officeView():cur==="calendar"?calendar():eventsView())}
 /* ---------- schedule changes (Today) ---------- */
 function scheduleChanges(){const in30=iso(addDays(new Date(),30)),ago7=iso(addDays(new Date(),-7));
-  return[...S.events.filter(e=>e.change&&evVisible(e)&&e.date>=TODAY&&e.date<=in30).map(e=>({title:e.title,text:e.change})),...S.bulletin.filter(p=>p.tag==="Schedule change"&&(p.date||"")>=ago7).map(p=>({title:p.title,text:p.body}))]}
+  return[...S.events.filter(e=>e.change&&evVisible(e)&&e.date>=TODAY&&e.date<=in30).map(e=>({title:e.title,text:e.change})),...S.bulletin.filter(p=>p.tag==="Schedule change"&&(p.date||"")>=ago7).map(p=>({title:p.title,text:String(p.body||"").replace(/\*\*/g,"").replace(/^\s*[-•*]\s+/gm,"").replace(/\s*\n+\s*/g," · ")}))]}
 
 /* ---------- proposals ---------- */
 function tally(p){const v=p.votes||{},t={aye:0,nay:0,abstain:0};for(const k in v)if(t[v[k]]!=null&&isApproved(S.members.find(m=>m.id===k)))t[v[k]]++;return t}
@@ -2772,7 +2848,7 @@ async function saveEditor(){
   else{const ref=col("proposals").doc();ok=await save(()=>ref.set({...data,number:nextNumber(),status:"draft",votes:{},author:me.id||null,created:new Date().toISOString()}),"Proposal saved",["wrote","proposal",data.title]);if(ok)selProposal=ref.id}
   if(ok){editing=null;$("#main").innerHTML="";render()}
 }
-document.addEventListener("input",e=>{if(e.target.id==="ohQ"){ohQ=e.target.value;const l=$("#ohList");if(l)l.innerHTML=ohList();return}if(e.target.id==="helpQ"){want("spaces","all");helpQ=e.target.value;const q=helpQ.trim().toLowerCase(),l=$("#helpList");if(l)l.innerHTML=helpList(S.spaces.filter(d=>d.id!==me.id&&((d.skills||[]).length||(d.activities||[]).length)).filter(d=>!q||[d.name,...(d.skills||[]),...(d.activities||[])].join(" ").toLowerCase().includes(q)));return}if(e.target.id==="oppQ"){oppQ=e.target.value;const l=$("#oppList");if(l)l.innerHTML=oppList();return}if(editing&&e.target.closest&&e.target.closest("#pform")){readEditor();const pv=$("#preview");if(pv)pv.innerHTML=docHTML(editing.d)}});
+document.addEventListener("input",e=>{if(e.target.id==="annQ"){annQ=e.target.value;const l=$("#annList");if(l)l.innerHTML=annList();return}if(e.target.id==="ohQ"){ohQ=e.target.value;const l=$("#ohList");if(l)l.innerHTML=ohList();return}if(e.target.id==="helpQ"){want("spaces","all");helpQ=e.target.value;const q=helpQ.trim().toLowerCase(),l=$("#helpList");if(l)l.innerHTML=helpList(S.spaces.filter(d=>d.id!==me.id&&((d.skills||[]).length||(d.activities||[]).length)).filter(d=>!q||[d.name,...(d.skills||[]),...(d.activities||[])].join(" ").toLowerCase().includes(q)));return}if(e.target.id==="oppQ"){oppQ=e.target.value;const l=$("#oppList");if(l)l.innerHTML=oppList();return}if(editing&&e.target.closest&&e.target.closest("#pform")){readEditor();const pv=$("#preview");if(pv)pv.innerHTML=docHTML(editing.d)}});
 
 /* attendance */
 function quorum(m){const r=m.records||{},ms=roster(),total=ms.length;let here=0;for(const x of ms)if(r[x.id]==="present"||r[x.id]==="late")here++;return{here,total,met:total>0&&here>total/2,need:Math.floor(total/2)+1}}
@@ -2910,7 +2986,7 @@ const forms={
   club:()=>crud("clubs",{title:"Add a club",noun:"club",kind:"club",titleKey:"name",fields:[{id:"name",label:"Club name",required:true,full:true},{id:"meets",label:"When and where it meets",placeholder:"e.g. Tuesdays at lunch, Room 512"},{id:"leader",label:"Who runs it"},{id:"link",label:"Link (optional)",full:true,placeholder:"https://"},{id:"news",label:"Latest update",full:true,placeholder:"e.g. Bake sale this Friday"},{id:"about",label:"What the club does",type:"textarea"}]}),
   opp:()=>crud("opps",{title:"Post an opportunity",noun:"opportunity",kind:"opportunity",fields:[{id:"title",label:"Title",required:true,full:true},{id:"category",label:"Category",type:"select",options:OPP_GROUPS},{id:"deadline",label:"Deadline",type:"date"},{id:"org",label:"Organization or club",full:true},{id:"who",label:"Who can apply",full:true,placeholder:"e.g. Grades 9 to 12"},{id:"link",label:"Link to apply or learn more",full:true,placeholder:"https://"},{id:"details",label:"Details",type:"textarea"}]}),
   task:()=>crud("tasks",{title:"Assign a task",noun:"task",kind:"task",fields:[{id:"title",label:"Task",required:true,full:true},{id:"assignee",label:"Assign to",type:"select",options:memberOpts("Open — any member can accept")},{id:"due",label:"Due date",type:"date"},{id:"priority",label:"Priority",type:"select",options:PRI},{id:"committee",label:"Committee",list:COMMITTEES},{id:"details",label:"Details",type:"textarea"}]}),
-  post:()=>crud("bulletin",{title:"New bulletin post",noun:"post",kind:"post",fields:[{id:"title",label:"Headline",required:true,full:true},{id:"tag",label:"Category",type:"select",options:POST_TAGS},{id:"date",label:"Post date",type:"date"},{id:"author",label:"Posted by",type:"select",options:memberOpts("Student Council")},{id:"pinned",label:"Pin to top",type:"checkbox"},{id:"body",label:"Message",type:"textarea",required:true}]}),
+  post:()=>crud("bulletin",{title:"New bulletin post",noun:"post",kind:"post",fields:[{id:"title",label:"Headline",required:true,full:true},{id:"tag",label:"Category",type:"select",options:POST_TAGS},{id:"date",label:"Post date",type:"date"},{id:"author",label:"Posted by",type:"select",options:memberOpts("Student Council")},{id:"level",label:"How big is this?",type:"select",options:LEVELS,full:true},{id:"until",label:"Stop showing after (optional)",type:"date"},{id:"pinned",label:"Pin to top",type:"checkbox"},{id:"body",label:"Message. Start lines with - for a bullet list, wrap words in ** for bold.",type:"textarea",required:true},{id:"link",label:"Button link (optional, https://…)",full:true},{id:"linkLabel",label:"Button text",placeholder:"Learn more"}]}),
   meeting:()=>crud("meetings",{title:"Start a meeting",noun:"meeting",kind:"meeting",fields:[{id:"title",label:"Meeting name",required:true,full:true},{id:"date",label:"Date",type:"date",required:true},{id:"notes",label:"Notes",full:true}]}),
 };
 function joinForm(){
@@ -3084,6 +3160,11 @@ document.addEventListener("click",async e=>{
     case"t-accept":{const t=task();return save(()=>setClaim(id,"accepted"),"Task accepted",["accepted","task",t&&t.title])}
     case"t-claim":{const t=task(),to=b.dataset.to;return save(()=>setClaim(id,to),to==="done"?"Nice work":null,[to==="done"?"finished":to==="doing"&&taskState(t).status==="done"?"reopened":"started","task",t&&t.title])}
     case"t-drop":{const t=task();return save(()=>setClaim(id,null),"Task dropped",["dropped","task",t&&t.title])}
+    case"post-more":{if(openPosts.has(id))openPosts.delete(id);else openPosts.add(id);const el=document.getElementById("pb-"+id),open=openPosts.has(id);if(el)el.classList.toggle("clamp",!open);b.textContent=open?"Show less":"Read more";b.setAttribute("aria-expanded",String(open));return}
+    case"alert-x":{ls.set("atlas.hiddenAlerts",[...(ls.get("atlas.hiddenAlerts")||[]),id].slice(-50));return render()}
+    case"pop-close":return closeModal();
+    case"pop-all":closeModal();location.hash="#bulletin";return;
+    case"lunch-day":lunchSel=b.dataset.to;return render();
     case"set-day":return openForm({title:"Set today's Day",note:"The site counts school days (Monday to Friday) from here. Set it again after a holiday or break.",fields:[{id:"day",label:"Today is",type:"select",options:[["","Not a school day"],...[1,2,3,4,5,6,7,8,9,10].map(n=>[String(n),"Day "+n])]}],values:{day:String(schoolDay()||"")},submit:v=>save(()=>upsert("scores","_settings",{dayCycle:v.day?{date:TODAY,day:Number(v.day)}:null}),"Saved",["set today's Day","settings",v.day?"Day "+v.day:"none"])});
     case"add-post":return go("post",{date:TODAY,tag:"Announcement",author:amMember()&&myDoc()?me.id:""});
     case"edit-post":return forms.post()(id);
@@ -3109,7 +3190,7 @@ document.addEventListener("click",async e=>{
     case"sample":b.disabled=true;return loadSample();
   }
 });
-document.addEventListener("change",e=>{if(e.target.id==="roomDate"){roomDate=e.target.value||TODAY;render();return}if(e.target.id==="ohDay"){ohDay=e.target.value;const l=$("#ohList");if(l)l.innerHTML=ohList();return}
+document.addEventListener("change",e=>{if(e.target.id==="roomDate"){roomDate=e.target.value||TODAY;render();return}if(e.target.id==="annTag"){annTag=e.target.value;const l=$("#annList");if(l)l.innerHTML=annList();return}if(e.target.id==="ohDay"){ohDay=e.target.value;const l=$("#ohList");if(l)l.innerHTML=ohList();return}
   if(e.target.id==="rosterOnly"){const on=e.target.checked;save(()=>cfgSet(c=>{c.rosterOnly=on}),on?"Only listed emails can join now":"Anyone who signs in can join now");return}
   if(e.target.id==="sugFilter"){sugFilter=e.target.value;render()}
   if(e.target.dataset&&e.target.dataset.sug){const t=e.target,x=allSuggestions().find(s=>s.key===t.dataset.key);save(()=>db.doc("suggestions/"+t.dataset.sug).update({items:{[t.dataset.key]:{status:t.value,reviewedBy:me.id,reviewedAt:new Date().toISOString()}}}),"Status updated",["marked as "+label(SUG_STATUS,t.value).toLowerCase()+":","suggestion",x&&x.title])}

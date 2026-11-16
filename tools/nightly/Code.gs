@@ -297,7 +297,7 @@ function gameDay() {
   var post = gameDayPost_(games);
   if (old && old.title === post.title && old.body === post.body) return "up to date";
   var doc = old || {};
-  doc.title = post.title; doc.body = post.body; doc.games = games; doc.tag = "Sports"; doc.autoBody = post.body; doc.auto = true;
+  doc.title = post.title; doc.body = post.body; doc.games = games; doc.tag = "Sports"; doc.level = games.some(function (x) { return x.final; }) ? "important" : "normal"; doc.autoBody = post.body; doc.auto = true;
   doc.date = (old && old.date) || today; doc.author = (old && old.author) || ""; doc.pinned = !!(old && old.pinned); doc.at = (old && old.at) || new Date().toISOString();
   commit_([replaceWrite_(path, doc)]);
   return (old ? "updated" : "posted") + " (" + games.length + ")";
