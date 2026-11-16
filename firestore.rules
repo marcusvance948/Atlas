@@ -7,7 +7,8 @@ rules_version = '2';
 //   Anyone (no sign-in) ... reads the bulletin, calendar/events, opportunities and clubs
 //   Students .............. sign in with an email on the student list; read the student side;
 //                           sign up, vote, predict, suggest (only their own entries)
-//   Club leaders .......... students marked as a club leader on the list; send club posts for approval
+//   Club leaders .......... students marked as a club leader on the list; edit their club's page;
+//                           send club updates and club announcements for approval
 //   Council members ....... marked StuCo on the list, or approved by the president; edit and approve
 //   President ............. everything, including the student list, tasks and approvals
 
@@ -38,7 +39,14 @@ service cloud.firestore {
     match /bulletin/{id} { allow read: if true; allow write: if isCouncil(); }
     match /events/{id}   { allow read: if true; allow write: if isCouncil(); }
     match /opps/{id}     { allow read: if true; allow write: if isCouncil(); }
-    match /clubs/{id}    { allow read: if true; allow write: if isCouncil(); }
+    // Clubs: council adds and removes them. A club's leaders (named on the student list) can edit its page,
+    // but not rename it, so the club stays matched to their list entry.
+    match /clubs/{id} {
+      allow read: if true;
+      allow write: if isCouncil();
+      allow update: if isLeader() && resource.data.name.lower() in me().get('clubs', [])
+                    && request.resource.data.name == resource.data.name;
+    }
     match /config/{id}   { allow read: if true; allow write: if isOwner(); }
 
     // The student list: each person can read only their own row

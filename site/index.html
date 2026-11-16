@@ -197,6 +197,25 @@ main{padding:0;min-width:0}
 .sheet.pop h2{margin:10px 0 12px}
 .sheet.pop .p-body{margin-bottom:18px}
 .lunch{border-top:6px solid var(--rail);border-radius:0 0 6px 6px}
+/* club colors */
+.cc-teal{--cc:#0F766E;--cc-soft:#DDF3F0}.cc-blue{--cc:#2446C7;--cc-soft:#E3E9F8}.cc-purple{--cc:#7B3FB8;--cc-soft:#EFE5FA}.cc-pink{--cc:#B8306E;--cc-soft:#FBE4EE}.cc-red{--cc:#B4442F;--cc-soft:#F8E3DE}.cc-orange{--cc:#B35A00;--cc-soft:#FCEBD9}.cc-green{--cc:#1C7A45;--cc-soft:#DFF0E5}.cc-olive{--cc:#5A6B2E;--cc-soft:#EBEFDD}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .cc-teal{--cc:#4FD1C0;--cc-soft:#12302C} :root:not([data-theme="light"]) .cc-blue{--cc:#8EA9FF;--cc-soft:#1E2B4D} :root:not([data-theme="light"]) .cc-purple{--cc:#C39BF0;--cc-soft:#2C1F3D} :root:not([data-theme="light"]) .cc-pink{--cc:#F28BB8;--cc-soft:#3A1A29} :root:not([data-theme="light"]) .cc-red{--cc:#FF9A85;--cc-soft:#3A1E19} :root:not([data-theme="light"]) .cc-orange{--cc:#F5A85A;--cc-soft:#3A2712} :root:not([data-theme="light"]) .cc-green{--cc:#5CC98A;--cc-soft:#15301F} :root:not([data-theme="light"]) .cc-olive{--cc:#B9C97A;--cc-soft:#262C17}}
+:root[data-theme="dark"] .cc-teal{--cc:#4FD1C0;--cc-soft:#12302C} :root[data-theme="dark"] .cc-blue{--cc:#8EA9FF;--cc-soft:#1E2B4D} :root[data-theme="dark"] .cc-purple{--cc:#C39BF0;--cc-soft:#2C1F3D} :root[data-theme="dark"] .cc-pink{--cc:#F28BB8;--cc-soft:#3A1A29} :root[data-theme="dark"] .cc-red{--cc:#FF9A85;--cc-soft:#3A1E19} :root[data-theme="dark"] .cc-orange{--cc:#F5A85A;--cc-soft:#3A2712} :root[data-theme="dark"] .cc-green{--cc:#5CC98A;--cc-soft:#15301F} :root[data-theme="dark"] .cc-olive{--cc:#B9C97A;--cc-soft:#262C17}
+.post.club{border-left:5px solid var(--cc)}
+.chip.club{background:var(--cc-soft);color:var(--cc);border-color:transparent}
+.p-club{color:var(--cc);font-weight:700;text-decoration:none;font-size:14px}.p-club:hover{text-decoration:underline}
+.opp.club-card{border-top:6px solid var(--cc);border-radius:0 0 6px 6px}
+.club-card h3 a{color:var(--ink);text-decoration:none}.club-card h3 a:hover{color:var(--cc);text-decoration:underline}
+.club-card .tagline{color:var(--cc);font-weight:700;font-size:15px;margin:0}
+.club-hero{background:var(--cc-soft);border-top:8px solid var(--cc);border-radius:0 0 8px 8px;padding:22px 24px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 24px;align-items:center;margin-bottom:22px}
+.club-hero .tagline{font-size:22px;font-weight:800;letter-spacing:-.015em;line-height:1.2;color:var(--ink);margin:0;text-wrap:balance}
+.club-hero .facts{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:15px;color:var(--muted)}.club-hero .facts b{color:var(--ink)}
+.club-hero .acts{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.club-cover{width:100%;max-height:340px;object-fit:cover;border-radius:6px;display:block;margin-bottom:22px}
+.club-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:22px;align-items:start}
+.club-side dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px 14px;margin:10px 0 0;font-size:15px}.club-side dt{color:var(--muted);font-weight:700}.club-side dd{margin:0;overflow-wrap:anywhere}
+.club-photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.club-photos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px}
+@media (max-width:760px){.club-grid{grid-template-columns:minmax(0,1fr)}.club-hero{grid-template-columns:minmax(0,1fr)}.club-hero .acts{flex-direction:row;flex-wrap:wrap}}
 .lunch-top{display:flex;align-items:baseline;gap:10px}.lunch-top .sub{margin-left:auto}
 .ldays{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:12px 0 14px}
 .ldays button{border:1.5px solid var(--rule);background:transparent;border-radius:3px;padding:5px 0;font-weight:700;font-size:13px;cursor:pointer;color:var(--muted);display:flex;flex-direction:column;align-items:center;line-height:1.15}
@@ -1000,8 +1019,8 @@ a.fchip{text-decoration:none;display:inline-block}
 <script>
 const STUDENT_NAV=[["home","Today","home"],["explore","Explore","events"],["play","Play","play"],["stuco","StuCo","stuco"]];
 const COUNCIL_NAV=[["overview","Overview"],["tasks","Tasks"],["proposals","Proposals"],["attendance","Attendance"],["members","Members"],["history","History"]];
-const ROUTES={home:"home",bulletin:"home",events:"explore",calendar:"explore",clubs:"explore",opportunities:"explore",officehours:"explore",play:"play",stuco:"stuco",suggestions:"stuco",lost:"stuco",voice:"stuco",working:"stuco",myspace:"me",overview:"overview",tasks:"tasks",proposals:"proposals",attendance:"attendance",members:"members",history:"history"};
-const STUDENT_ROUTES=["home","bulletin","events","calendar","clubs","opportunities","officehours","play","stuco","suggestions","lost","voice","working","myspace"];
+const ROUTES={home:"home",bulletin:"home",events:"explore",calendar:"explore",clubs:"explore",club:"explore",opportunities:"explore",officehours:"explore",play:"play",stuco:"stuco",suggestions:"stuco",lost:"stuco",voice:"stuco",working:"stuco",myspace:"me",overview:"overview",tasks:"tasks",proposals:"proposals",attendance:"attendance",members:"members",history:"history"};
+const STUDENT_ROUTES=["home","bulletin","events","calendar","clubs","club","opportunities","officehours","play","stuco","suggestions","lost","voice","working","myspace"];
 /* old links keep working: each old page name points at where that content lives now */
 const ALIAS={hub:["home"],community:["home"],create:["home"],collabs:["home"],life:["home","sec-photos"],connect:["clubs"],explore:["events"],challenges:["play","sec-game"],dares:["play","sec-challenges"],leaderboard:["play","sec-leaderboard"]};
 let pendingScroll=null;
@@ -1109,7 +1128,7 @@ const col=c=>db.collection(c);
 function cfgSet(mut){if(!loaded.has("config"))return Promise.reject({code:"unavailable"});const next=JSON.parse(JSON.stringify({approved:{},roles:{},...CFG}));mut(next);return db.doc("config/access").set(next)}
 
 /* ---------- routing ---------- */
-function current(){let h=location.hash.slice(1);if(ALIAS[h]){const[t,a]=ALIAS[h];pendingScroll=a||null;try{history.replaceState(null,"","#"+t)}catch(e){}h=t}return ROUTES[h]?h:null}
+function current(){let h=location.hash.slice(1);if(h.startsWith("club/")){clubId=decodeURIComponent(h.slice(5));return"club"}if(ALIAS[h]){const[t,a]=ALIAS[h];pendingScroll=a||null;try{history.replaceState(null,"","#"+t)}catch(e){}h=t}return ROUTES[h]?h:null}
 let view=current();
 addEventListener("hashchange",()=>{view=current();const ps=pendingScroll;if(view!=="proposals")editing=null;render();const sc=document.getElementById(ps||("sec-"+view));pendingScroll=null;if(sc)sc.scrollIntoView();else window.scrollTo(0,0)});
 
@@ -1160,7 +1179,7 @@ function render(){
     else if(d&&isApproved(d)&&!isEditor)banner=`<div class="banner">You're an approved council member. Ask the president to give you Editor access to this page so you can make changes.</div>`;}
   if(preview&&canCouncil())banner=`<div class="banner preview"><span>You're seeing the site the way students see it.</span><button class="btn sm" data-act="mode" data-to="council">Back to council view</button></div>`+banner;
   if(lockedOut())banner+=`<div class="banner">You're signed in as ${esc(me.email||"an account")}, which isn't on the Avenues student list. Sign in with your school email, or ask Student Council to add you.</div>`;
-  const VIEWFN={bulletin,events:exploreTab,calendar:exploreTab,clubs:exploreTab,opportunities:exploreTab,officehours:exploreTab,play:playPage,stuco:stucoPage,suggestions:stucoPage,lost:stucoPage,voice:stucoPage,working:stucoPage,myspace:mySpaceView,overview,tasks:()=>tasks(),proposals,attendance,members,history:historyView};
+  const VIEWFN={bulletin,events:exploreTab,calendar:exploreTab,clubs:exploreTab,club:exploreTab,opportunities:exploreTab,officehours:exploreTab,play:playPage,stuco:stucoPage,suggestions:stucoPage,lost:stucoPage,voice:stucoPage,working:stucoPage,myspace:mySpaceView,overview,tasks:()=>tasks(),proposals,attendance,members,history:historyView};
   if(!council()&&shownView()!=="bulletin")banner=alertBar()+banner;
   $("#main").innerHTML=banner+VIEWFN[shownView()]();
   $("#bandH1").innerHTML=pageHead.title||"";const bc=$("#bandCtx");bc.innerHTML=pageHead.context||"";bc.hidden=!pageHead.context;
@@ -1345,10 +1364,11 @@ function relDay(d){const n=daysAgo(d);if(!d)return"";if(n===0)return"Today";if(n
 function fmtBody(t){const inl=x=>esc(x).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/https:\/\/[^\s<]+[^\s<.,;:!?)]/g,u=>`<a href="${u}" target="_blank" rel="noopener">${u.replace(/^https:\/\/(www\.)?/,"")}</a>`);
   return String(t||"").trim().split(/\n\s*\n/).map(b=>{const l=b.split("\n").filter(x=>x.trim());return l.length&&l.every(x=>/^\s*[-•*]\s+/.test(x))?`<ul>${l.map(x=>`<li>${inl(x.replace(/^\s*[-•*]\s+/,""))}</li>`).join("")}</ul>`:`<p>${l.map(x=>inl(x.trim())).join("<br>")}</p>`}).join("")}
 function postCard(p){const lv=p.level||"normal",body=p.body||"",long=body.length>300||body.split("\n").length>6,open=openPosts.has(p.id),link=safeUrl(p.link);
-  return`<article class="post ${p.pinned?"pinned":""} lv-${esc(lv)}"><div class="p-head"><span class="chip ${POST_CHIP[p.tag]||""}">${esc(p.tag||"Announcement")}</span>${lv!=="normal"?`<span class="chip bad">Important</span>`:""}${p.pinned?`<span class="chip gold">Pinned</span>`:""}${isNewPost(p)?`<span class="p-new">New</span>`:""}<span class="sp"></span><time datetime="${esc(p.date||"")}" title="${esc(longd(p.date))}">${esc(relDay(p.date))}</time></div>
+  const cl=p.clubKey?clubByKey(p.clubKey):null,cc=p.clubKey?(cl?clubColor(cl):p.clubColor||clubColor({name:p.clubName})):"";
+  return`<article class="post ${p.pinned?"pinned":""} lv-${esc(lv)}${cc?" club cc-"+cc:""}"><div class="p-head">${cc?`<span class="chip club">${esc(p.clubName||"Club")}</span>`:`<span class="chip ${POST_CHIP[p.tag]||""}">${esc(p.tag||"Announcement")}</span>`}${lv!=="normal"?`<span class="chip bad">Important</span>`:""}${p.pinned?`<span class="chip gold">Pinned</span>`:""}${isNewPost(p)?`<span class="p-new">New</span>`:""}<span class="sp"></span><time datetime="${esc(p.date||"")}" title="${esc(longd(p.date))}">${esc(relDay(p.date))}</time></div>
   <h3>${esc(p.title)}</h3><div class="p-body ${long&&!open?"clamp":""}" id="pb-${esc(p.id)}">${fmtBody(body)}</div>${long?`<button class="more" data-act="post-more" data-id="${esc(p.id)}" aria-expanded="${open}" aria-controls="pb-${esc(p.id)}">${open?"Show less":"Read more"}</button>`:""}
   ${link?`<div><a class="btn sm primary" href="${esc(link)}" target="_blank" rel="noopener">${esc(p.linkLabel||"Learn more")}</a></div>`:""}
-  <div class="p-foot">${p.author?who(p.author,""):`<span class="who">Student Council</span>`}${p.auto?`<span title="Posted automatically from the school's schedule">Automatic</span>`:""}<span class="sp"></span>${heartBtn(p.id)}${canAct()?`<button class="btn sm ghost" data-act="edit-post" data-id="${esc(p.id)}">Edit</button>`:""}</div></article>`}
+  <div class="p-foot">${p.clubKey?(cl?`<a class="p-club" href="${clubHref(cl)}">${esc(p.byName||p.clubName)} · Club page →</a>`:`<span>${esc(p.byName||p.clubName||"")}</span>`):p.author?who(p.author,""):`<span class="who">Student Council</span>`}${p.auto?`<span title="Posted automatically from the school's schedule">Automatic</span>`:""}<span class="sp"></span>${heartBtn(p.id)}${canAct()?`<button class="btn sm ghost" data-act="edit-post" data-id="${esc(p.id)}">Edit</button>`:""}</div></article>`}
 function alertBar(){const hidden=ls.get("atlas.hiddenAlerts")||[],p=sortedPosts().filter(isImportant).sort((a,b)=>postAt(b).localeCompare(postAt(a))).find(x=>!hidden.includes(x.id));if(!p)return"";
   return`<div class="alert-bar" role="status"><span class="chip bad">Important</span><a href="#bulletin">${esc(p.title)}</a><button class="x" data-act="alert-x" data-id="${esc(p.id)}" aria-label="Hide this notice">×</button></div>`}
 function maybePopup(){if(popDone||!loaded.has("bulletin")||council()||!$("#modal").hidden)return;const seen=ls.get("atlas.popups")||[],p=sortedPosts().find(x=>x.level==="popup"&&isImportant(x)&&!seen.includes(x.id));if(!p)return;popDone=true;
@@ -1993,24 +2013,58 @@ function rosterPanel(){return`<div class="field"><label for="rosterPaste">Studen
   <div class="toolbar"><button class="btn sm primary" data-act="roster-import">Import list</button><span class="sub" id="rosterStatus">${rosterSummary()}</span></div>
   <div class="field check"><input type="checkbox" id="rosterOnly" ${CFG.rosterOnly?"checked":""}><label for="rosterOnly">Only people on this list can join</label></div></div>`}
 
+/* Clubs: each club has a color, a page its leaders edit (tagline, about, how to join, contact, photos), updates,
+   and announcements. Leaders are the people named under "Club leader" on the student list (roster clubs). */
+const CLUB_COLORS=[["teal","Teal"],["blue","Blue"],["purple","Purple"],["pink","Pink"],["red","Red"],["orange","Orange"],["green","Green"],["olive","Olive"]];
+var clubId;/* var with no value: current() sets it from the address before this line runs */
+const clubColor=c=>{if(c&&CLUB_COLORS.some(([k])=>k===c.color))return c.color;let h=0;for(const ch of clubKey(c&&c.name))h=(h*31+ch.charCodeAt(0))>>>0;return CLUB_COLORS[h%CLUB_COLORS.length][0]};
+const clubByKey=k=>S.clubs.find(c=>clubKey(c.name)===k);
+const clubHref=c=>"#club/"+encodeURIComponent(c.id);
+const canEditClub=c=>!!c&&(canAct()||leads(c));
+function clubPage(){const c=S.clubs.find(x=>x.id===clubId);
+  if(!c)return head("","Club")+empty(loaded.has("clubs")?"This club isn't listed":"Loading the club…",loaded.has("clubs")?"It may have been renamed or removed.":"",null,"")+`<p><a href="#clubs">Back to all clubs</a></p>`;
+  const k=clubKey(c.name),col_=clubColor(c),mine=myPlay().clubs||{},link=safeUrl(c.link),ph=c.photos||[],
+    ups=S.clubposts.filter(p=>p.clubKey===k).sort((a,b)=>(b.at||"").localeCompare(a.at||"")),anns=sortedPosts().filter(p=>p.clubKey===k).slice(0,6),
+    pend=allDrafts().filter(d=>d.clubKey===k&&d.status==="pending"&&(d.uid===me.id||council()));
+  const acts=`${canJoin()?`<button class="btn ${mine[c.id]?"":"primary"}" data-act="club-join" data-id="${c.id}" aria-pressed="${!!mine[c.id]}">${mine[c.id]?"You're interested":"I'm interested"}</button>`:""}${leads(c)||canAct()?`<button class="btn" data-act="cp-new" data-id="${c.id}">Post an update</button>`:""}${canEditClub(c)?`<button class="btn ghost" data-act="club-page" data-id="${c.id}">Edit club page</button>`:""}`;
+  return head("",esc(c.name))+`<p style="margin:-6px 0 14px"><a href="#clubs">← All clubs</a></p>
+  <div class="cc-${col_}">${ph[0]?`<img class="club-cover" src="${blob(ph[0])}" alt="">`:""}
+  <section class="club-hero"><div><p class="tagline">${esc(c.tagline||c.about||"A club at Avenues")}</p><div class="facts">${c.meets?`<span><b>Meets</b> ${esc(c.meets)}</span>`:""}${c.leader?`<span><b>Led by</b> ${esc(c.leader)}</span>`:""}${council()?`<span>${S.picks.filter(d=>(d.clubs||{})[c.id]).length} interested</span>`:""}</div></div><div class="acts">${acts}</div></section>
+  <div class="club-grid"><div>
+    ${c.page||c.about?`<section class="panel"><h2>About</h2><div class="p-body" style="margin-top:10px">${fmtBody(c.page||c.about)}</div>${ph.length>1?`<div class="club-photos">${ph.slice(1,7).map(id=>`<img src="${blob(id)}" alt="" loading="lazy">`).join("")}</div>`:""}</section>`:canEditClub(c)?`<section class="panel">${empty("Tell people about your club","Add what you do, when you meet, how to join and some photos.","club-page","Set up the club page",true).replace('data-act="club-page"',`data-act="club-page" data-id="${c.id}"`)}</section>`:""}
+    ${anns.length?`<section class="panel"><h2>Announcements</h2><div class="posts one" style="margin-top:12px">${anns.map(postCard).join("")}</div></section>`:""}
+    <section class="panel"><h2>Updates</h2>${pend.length?`<p class="sub" style="margin:8px 0 0">${pend.length} update${pend.length>1?"s":""} waiting for Student Council approval.</p>`:""}${ups.length?ups.slice(0,10).map(postHTML).join(""):`<p class="sub" style="margin:10px 0 0">No updates yet.</p>`}</section>
+  </div><aside class="club-side"><section class="panel"><h2>Join</h2><dl>${c.join?`<dt>How</dt><dd>${esc(c.join)}</dd>`:""}${c.meets?`<dt>When</dt><dd>${esc(c.meets)}</dd>`:""}${c.leader?`<dt>Leaders</dt><dd>${esc(c.leader)}</dd>`:""}${c.contact?`<dt>Contact</dt><dd>${esc(c.contact)}</dd>`:""}</dl>${link?`<div style="margin-top:12px"><a class="btn sm" href="${esc(link)}" target="_blank" rel="noopener">Club website</a></div>`:""}</section></aside></div></div>`}
+function clubPageForm(id){const c=S.clubs.find(x=>x.id===id);if(!canEditClub(c))return;const full=canAct();
+  openForm({title:"Edit "+c.name,submitLabel:"Save page",note:full?"":"Changes show up right away. Student Council can see and undo them.",
+    fields:[...(full?[{id:"name",label:"Club name",required:true,full:true}]:[]),{id:"tagline",label:"One-line pitch",full:true,placeholder:"e.g. We build robots and compete at FIRST"},{id:"color",label:"Club color",type:"select",options:CLUB_COLORS},{id:"meets",label:"When and where you meet"},{id:"leader",label:"Leaders' names"},{id:"contact",label:"Contact",placeholder:"e.g. robotics@… or @avenuesrobotics"},{id:"join",label:"How to join",full:true,placeholder:"e.g. Just show up, or fill in the interest form"},{id:"link",label:"Club website (optional, https://)",full:true},{id:"page",label:"About the club. Start lines with - for bullets, ** for bold.",type:"textarea",full:true},{id:"photos",label:"Photos (the first one is the cover)",type:"photos",multiple:true}],
+    values:{...c,color:clubColor(c),page:c.page||c.about||"",photos:c.photos||[]},
+    submit:v=>{if(v.link&&!safeUrl(v.link)){$("#merr").textContent="Links need to start with https://";return false}const data={tagline:v.tagline||"",color:v.color,meets:v.meets||"",leader:v.leader||"",contact:v.contact||"",join:v.join||"",link:v.link||"",page:v.page||"",photos:v.photos||[],editedBy:me.id||null,editedAt:new Date().toISOString()};if(full)data.name=v.name;
+      return save(()=>col("clubs").doc(id).update(data),"Club page saved",["edited the club page for","club",c.name])}})}
+function clubRequestForm(){openForm({title:"Add your club",submitLabel:"Send to Student Council",note:"Student Council checks it, then your club shows up in the directory with its own page.",
+  fields:[{id:"title",label:"Club name",required:true,full:true},{id:"meets",label:"When and where it meets"},{id:"leader",label:"Who runs it"},{id:"text",label:"What the club does",type:"textarea",full:true,required:true},{id:"lead",label:"I lead this club (you'll be able to edit its page)",type:"checkbox"}],
+  submit:v=>submitItem({kind:"club",title:v.title,text:v.text,meets:v.meets||"",leader:v.leader||"",lead:!!v.lead,email:(me.email||"").toLowerCase()})})}
 function allDrafts(){const out=[];for(const d of S.clubdrafts)for(const[k,v]of Object.entries(d.items||{}))if(v&&v.text)out.push({...v,key:k,uid:d.id});return out.sort((a,b)=>(b.at||"").localeCompare(a.at||""))}
 function postHTML(p){return`<div class="clubpost">${(p.photos||[]).length?`<div class="cp-photos">${p.photos.slice(0,4).map(id=>`<img src="${blob(id)}" alt="" loading="lazy">`).join("")}</div>`:""}<p>${esc(p.text)}</p><div class="sub parts"><span>${esc(short((p.at||"").slice(0,10)))}</span>${p.byName?`<span>Posted by ${esc(p.byName)}</span>`:""}${canAct()&&p.id?`<button class="btn sm ghost" data-act="cp-delete" data-id="${p.id}">Remove</button>`:""}</div></div>`}
+function clubAnn(d){return{title:d.title,body:d.text,tag:"Club",clubKey:d.clubKey,clubName:d.clubName,clubColor:d.clubColor||"",level:"normal",date:TODAY,at:new Date().toISOString(),by:d.by||null,byName:d.byName||""}}
 function clubPostForm(cid){const c=S.clubs.find(x=>x.id===cid);if(!c)return;const direct=canAct();
   openForm({title:"Post an update for "+c.name,submitLabel:direct?"Post":"Send for approval",note:direct?"":"Student Council checks each post before it goes up.",
-    fields:[{id:"text",label:"What's new",type:"textarea",required:true,placeholder:"A win, a recap, what's coming up"},{id:"photos",label:"Photos",type:"photos",multiple:true}],values:{photos:[]},
-    submit:v=>{const item={clubKey:clubKey(c.name),clubName:c.name,text:v.text,photos:v.photos,at:new Date().toISOString(),by:me.id,byName:(RM()&&RM().name)||me.name||""};
-      if(direct)return save(()=>col("clubposts").add(item),"Posted",["posted a club update for","club",c.name]);
+    fields:[{id:"text",label:"What's new",type:"textarea",required:true,placeholder:"A win, a recap, what's coming up"},{id:"photos",label:"Photos",type:"photos",multiple:true},{id:"announce",label:"Also post it to school announcements, in the club's color",type:"checkbox",full:true},{id:"title",label:"Headline, for announcements",full:true,placeholder:"e.g. Robotics heads to the city championship"}],values:{photos:[]},
+    submit:v=>{if(v.announce&&!(v.title||"").trim()){$("#merr").textContent="Add a headline for the announcement.";return false}
+      const item={clubKey:clubKey(c.name),clubName:c.name,clubColor:clubColor(c),text:v.text,photos:v.photos,announce:!!v.announce,title:(v.title||"").trim(),at:new Date().toISOString(),by:me.id,byName:(RM()&&RM().name)||me.name||""};
+      if(direct)return save(async()=>{await col("clubposts").add(item);if(item.announce)await col("bulletin").add(clubAnn(item))},"Posted",["posted a club update for","club",c.name]);
       return save(()=>upsert("clubdrafts",me.id,{items:{[Date.now().toString(36)]:{...item,status:"pending"}}}),"Sent to Student Council for approval")}})}
 function clubsView(){
   const cs=[...S.clubs].sort((a,b)=>(a.name||"").localeCompare(b.name||"")),mine=myPlay().clubs||{},posts=[...S.clubposts].sort((a,b)=>(b.at||"").localeCompare(a.at||"")),drafts=allDrafts(),pending=drafts.filter(d=>d.status==="pending");
-  let out=head("Every club at Avenues: when it meets, who runs it, what it's been up to, and how to join.","Clubs",addBtn("add-club","Add a club"));
+  let out=head("Every club at Avenues: when it meets, who runs it, what it's been up to, and how to join.","Clubs",canAct()?addBtn("add-club","Add a club"):canJoin()?`<button class="btn primary" data-act="club-request">+ Add your club</button>`:"");
   if(council()&&pending.length){resolveIds(pending.map(d=>d.uid));
     out+=`<section class="panel"><h2>Club posts waiting for approval</h2><ul class="sugs" style="border-top:0">${pending.map(d=>`<li><div class="sug-head"><span class="title">${esc(d.clubName)}</span>${who(d.uid,"Club leader")}</div>${postHTML(d)}${canAct()?`<div class="toolbar"><button class="btn sm good" data-act="cp-approve" data-uid="${esc(d.uid)}" data-key="${esc(d.key)}">Approve and post</button><button class="btn sm ghost danger" data-act="cp-decline" data-uid="${esc(d.uid)}" data-key="${esc(d.key)}">Decline</button></div>`:""}</li>`).join("")}</ul></section>`}
   if(!council()){const own=drafts.filter(d=>d.uid===me.id&&d.status!=="approved").slice(0,5);
     if(own.length)out+=`<section class="panel"><h2>Your club posts</h2><ul class="sugs" style="border-top:0">${own.map(d=>`<li><div class="sug-head"><span class="title">${esc(d.clubName)}</span><span class="state ${d.status==="declined"?"wait":"todo"}">${d.status==="declined"?"Not approved":"Waiting for Student Council approval"}</span></div><p>${esc(d.text)}</p></li>`).join("")}</ul></section>`}
-  return out+(cs.length?`<div class="opps">${cs.map(c=>{const link=safeUrl(c.link),n=S.picks.filter(d=>(d.clubs||{})[c.id]).length,ps=posts.filter(p=>p.clubKey===clubKey(c.name)).slice(0,2);
-    return`<article class="opp"><h3>${esc(c.name)}</h3>${c.about?`<p>${esc(c.about)}</p>`:""}<div class="sub parts">${c.meets?`<span>Meets ${esc(c.meets)}</span>`:""}${c.leader?`<span>Run by ${esc(c.leader)}</span>`:""}</div>${c.news?`<div class="reply"><b>Latest:</b> ${esc(c.news)}</div>`:""}${ps.map(postHTML).join("")}<div class="toolbar">${leads(c)||canAct()?`<button class="btn sm primary" data-act="cp-new" data-id="${c.id}">Post an update</button>`:""}${canJoin()?`<button class="btn sm" data-act="club-join" data-id="${c.id}" aria-pressed="${!!mine[c.id]}">${mine[c.id]?"You're interested":"I'm interested"}</button>`:""}${link?`<a class="btn sm ghost" href="${esc(link)}" target="_blank" rel="noopener">Club page</a>`:""}${council()&&n?`<span class="sub">${n} interested</span>`:""}${canAct()?`<button class="btn sm ghost" data-act="edit-club" data-id="${c.id}">Edit</button>`:""}</div></article>`}).join("")}</div>`
-  :empty("No clubs listed yet",canAct()?"Add each club with when it meets and who runs it. Club leaders on your student list can then post updates for approval.":"Clubs will be listed here soon.","add-club","Add the first club"));
+  out+=modPanel(["club"]);
+  return out+(cs.length?`<div class="opps">${cs.map(c=>{const link=safeUrl(c.link),n=S.picks.filter(d=>(d.clubs||{})[c.id]).length,ps=posts.filter(p=>p.clubKey===clubKey(c.name)).slice(0,1);
+    return`<article class="opp club-card cc-${clubColor(c)}"><h3><a href="${clubHref(c)}">${esc(c.name)}</a></h3>${c.tagline?`<p class="tagline">${esc(c.tagline)}</p>`:""}${c.about&&!c.tagline?`<p>${esc(c.about.length>180?c.about.slice(0,177)+"…":c.about)}</p>`:""}<div class="sub parts">${c.meets?`<span>Meets ${esc(c.meets)}</span>`:""}${c.leader?`<span>Run by ${esc(c.leader)}</span>`:""}</div>${c.news?`<div class="reply"><b>Latest:</b> ${esc(c.news)}</div>`:""}${ps.map(postHTML).join("")}<div class="toolbar">${leads(c)||canAct()?`<button class="btn sm primary" data-act="cp-new" data-id="${c.id}">Post an update</button>`:""}${canJoin()?`<button class="btn sm" data-act="club-join" data-id="${c.id}" aria-pressed="${!!mine[c.id]}">${mine[c.id]?"You're interested":"I'm interested"}</button>`:""}<a class="btn sm ghost" href="${clubHref(c)}">Club page</a>${council()&&n?`<span class="sub">${n} interested</span>`:""}${canAct()?`<button class="btn sm ghost" data-act="edit-club" data-id="${c.id}">Edit</button>`:""}</div></article>`}).join("")}</div>`
+  :empty("No clubs listed yet",canAct()?"Add each club with when it meets and who runs it. Club leaders on your student list can then post updates for approval.":"Clubs will be listed here soon. Run a club? Add it.",canAct()?"add-club":canJoin()?"club-request":null,canAct()?"Add the first club":"Add your club",canAct()||canJoin()));
 }
 function sceneInfo(){const a=currentAviator(),p=sortedPosts()[0],now=new Date();
   return{aviator:a?"AVIATOR OF THE WEEK: "+a.name:"",news:p?p.title:"",bdays:S.birthdays.filter(b=>b.show!==false&&b.name&&Number(b.month)===now.getMonth()+1&&Number(b.day)===now.getDate()).map(b=>b.name)}}
@@ -2020,7 +2074,7 @@ function sceneInfo(){const a=currentAviator(),p=sortedPosts()[0],now=new Date();
    Student submissions wait in the student's own submissions document until a council member approves them. */
 const MEDIA=[["art","Art"],["photo","Photography"],["music","Music"],["film","Film and video"],["writing","Writing"],["project","Project"]];
 const MEDIA_GROUP={art:"visual",photo:"visual",music:"sound",film:"sound",writing:"words",project:"words"};
-const POST_KIND={post:"Opinion",rec:"Recommendation",collab:"Looking for people",create:"Accomplishment",opp:"Opportunity"};
+const POST_KIND={post:"Opinion",rec:"Recommendation",collab:"Looking for people",create:"Accomplishment",opp:"Opportunity",club:"New club"};
 const FEED_KINDS=["post","rec","collab","create","opp"];
 let lostFilter="all";
 let feedFilter="all",createFilter="all",openPost=null;
@@ -2647,7 +2701,7 @@ function subscribeBtns(){const u=calFeed();if(!u)return isPres&&canAct()?`<butto
 
 /* ---------- Explore: events, clubs, opportunities ---------- */
 function exploreTab(){const cur=shownView();
-  return subnav([["events","Events",["calendar"]],["clubs","Clubs"],["opportunities","Opportunities"],["officehours","Office hours"]])+(cur==="clubs"?clubsView():cur==="opportunities"?oppsView():cur==="officehours"?officeView():cur==="calendar"?calendar():eventsView())}
+  return subnav([["events","Events",["calendar"]],["clubs","Clubs",["club"]],["opportunities","Opportunities"],["officehours","Office hours"]])+(cur==="clubs"?clubsView():cur==="club"?clubPage():cur==="opportunities"?oppsView():cur==="officehours"?officeView():cur==="calendar"?calendar():eventsView())}
 /* ---------- schedule changes (Today) ---------- */
 function scheduleChanges(){const in30=iso(addDays(new Date(),30)),ago7=iso(addDays(new Date(),-7));
   return[...S.events.filter(e=>e.change&&evVisible(e)&&e.date>=TODAY&&e.date<=in30).map(e=>({title:e.title,text:e.change})),...S.bulletin.filter(p=>p.tag==="Schedule change"&&(p.date||"")>=ago7).map(p=>({title:p.title,text:String(p.body||"").replace(/\*\*/g,"").replace(/^\s*[-•*]\s+/gm,"").replace(/\s*\n+\s*/g," · ")}))]}
@@ -3047,7 +3101,7 @@ document.addEventListener("click",async e=>{
     case"club-join":{const c={...(myPlay().clubs||{})};if(c[id])delete c[id];else c[id]=true;return save(()=>savePlay({clubs:c}))}
     case"roster-import":b.disabled=true;await importRoster();b.disabled=false;return;
     case"cp-new":return clubPostForm(id);
-    case"cp-approve":{const d=allDrafts().find(x=>x.uid===b.dataset.uid&&x.key===b.dataset.key);if(!d)return;const{key,uid,status,...post}=d;return save(async()=>{await col("clubposts").add(post);await db.doc("clubdrafts/"+uid).update({items:{[key]:{status:"approved",decidedAt:new Date().toISOString()}}})},"Approved and posted",["approved a club post from","club",d.clubName])}
+    case"cp-approve":{const d=allDrafts().find(x=>x.uid===b.dataset.uid&&x.key===b.dataset.key);if(!d)return;const{key,uid,status,...post}=d;return save(async()=>{await col("clubposts").add(post);if(d.announce&&d.title)await col("bulletin").add(clubAnn(d));await db.doc("clubdrafts/"+uid).update({items:{[key]:{status:"approved",decidedAt:new Date().toISOString()}}})},"Approved and posted",["approved a club post from","club",d.clubName])}
     case"cp-decline":{const d=allDrafts().find(x=>x.uid===b.dataset.uid&&x.key===b.dataset.key);if(!d)return;return save(()=>db.doc("clubdrafts/"+d.uid).update({items:{[d.key]:{status:"declined",decidedAt:new Date().toISOString()}}}),"Post declined",["declined a club post from","club",d.clubName])}
     case"cp-delete":return save(()=>col("clubposts").doc(id).delete(),"Post removed");
     case"new-post":return postForm(b.dataset.kind);
@@ -3080,7 +3134,10 @@ document.addEventListener("click",async e=>{
     case"create-filter":createFilter=b.dataset.to;return render();
     case"post-toggle":openPost=openPost===id?null:id;if(openPost)want("replies","all");return render();
     case"post-delete":{const w=S.posts.find(x=>x.id===id);if(gal)closeGallery();return save(()=>col("posts").doc(id).delete(),"Removed",["removed","post",w&&w.title])}
-    case"sub-approve":{const d=allSubs().find(x=>x.uid===b.dataset.uid&&x.key===b.dataset.key);if(!d)return;const{key,uid,status,...post}=d;return save(async()=>{if(d.kind==="opp")await col("opps").add({title:d.title,details:d.text||"",link:d.link||"",deadline:d.deadline||"",category:"career",byName:d.byName||"",created:d.at});else await col("posts").add(post);await db.doc("submissions/"+uid).update({items:{[key]:{status:"approved",decidedAt:new Date().toISOString()}}})},"Approved and posted",["approved","post",d.title])}
+    case"sub-approve":{const d=allSubs().find(x=>x.uid===b.dataset.uid&&x.key===b.dataset.key);if(!d)return;const{key,uid,status,...post}=d;return save(async()=>{if(d.kind==="opp")await col("opps").add({title:d.title,details:d.text||"",link:d.link||"",deadline:d.deadline||"",category:"career",byName:d.byName||"",created:d.at});
+      else if(d.kind==="club"){await col("clubs").add({name:d.title,about:d.text||"",meets:d.meets||"",leader:d.leader||d.byName||"",created:new Date().toISOString(),requestedBy:d.uid});
+        if(d.lead&&d.email&&isPres){const r=S.roster.find(x=>x.id===d.email),k=clubKey(d.title);if(r){if(!(r.clubs||[]).includes(k))await db.doc("roster/"+d.email).update({clubs:[...(r.clubs||[]),k]})}else await db.doc("roster/"+d.email).set({name:d.byName||"",grade:d.grade||"",clubs:[k]})}}
+      else await col("posts").add(post);await db.doc("submissions/"+uid).update({items:{[key]:{status:"approved",decidedAt:new Date().toISOString()}}})},"Approved and posted",["approved","post",d.title])}
     case"sub-decline":{const d=allSubs().find(x=>x.uid===b.dataset.uid&&x.key===b.dataset.key);if(!d)return;return save(()=>db.doc("submissions/"+d.uid).update({items:{[d.key]:{status:"declined",decidedAt:new Date().toISOString()}}}),"Declined",["declined","post",d.title])}
     case"reply-send":{const inp=$("#rp-"+id),v=inp.value.trim();if(!v){inp.focus();return}inp.value="";return save(()=>upsert("replies",me.id,{items:{[Date.now().toString(36)]:{postId:id,text:v.slice(0,400),at:new Date().toISOString(),name:myName()}}}))}
     case"reply-delete":{const d=S.replies.find(x=>x.id===b.dataset.uid);if(!d)return;const items={...d.items};delete items[b.dataset.key];return save(()=>db.doc("replies/"+d.id).set({items}),"Reply removed")}
@@ -3160,6 +3217,8 @@ document.addEventListener("click",async e=>{
     case"t-accept":{const t=task();return save(()=>setClaim(id,"accepted"),"Task accepted",["accepted","task",t&&t.title])}
     case"t-claim":{const t=task(),to=b.dataset.to;return save(()=>setClaim(id,to),to==="done"?"Nice work":null,[to==="done"?"finished":to==="doing"&&taskState(t).status==="done"?"reopened":"started","task",t&&t.title])}
     case"t-drop":{const t=task();return save(()=>setClaim(id,null),"Task dropped",["dropped","task",t&&t.title])}
+    case"club-page":return clubPageForm(id);
+    case"club-request":return clubRequestForm();
     case"post-more":{if(openPosts.has(id))openPosts.delete(id);else openPosts.add(id);const el=document.getElementById("pb-"+id),open=openPosts.has(id);if(el)el.classList.toggle("clamp",!open);b.textContent=open?"Show less":"Read more";b.setAttribute("aria-expanded",String(open));return}
     case"alert-x":{ls.set("atlas.hiddenAlerts",[...(ls.get("atlas.hiddenAlerts")||[]),id].slice(-50));return render()}
     case"pop-close":return closeModal();
@@ -3269,6 +3328,7 @@ const PAGE_NEEDS={
   bulletin:{bulletin:"all"},
   events:{events:"all"},calendar:{events:"all"},
   clubs:{clubs:"all",clubposts:"query"},
+  club:{clubs:"all",clubposts:"query",picks:"self"},
   opportunities:{opps:"all"},
   play:{predictions:"query"},
   stuco:{lostfound:"all",wins:"all",years:"all",tasks:"all",claims:"all"},
@@ -3277,7 +3337,7 @@ const PAGE_NEEDS={
 };
 /* council: approvals, settlement and the summary need everyone's documents */
 const BASE_COUNCIL={submissions:"all",clubdrafts:"all",suggestions:"all",done:"all",scores:"all",picks:"all",tasks:"all",claims:"all",members:"all",games:"all",gamekeys:"all",events:"all",bulletin:"all",proposals:"all",meetings:"all"};
-const COUNCIL_PAGES={overview:{gamevotes:"all",plays:"all",signups:"all",replies:"all",history:"all"},history:{history:"all"},members:{spaces:"all"},home:{signups:"all",replies:"all",gamevotes:"all",plays:"all"},play:{gamevotes:"all",plays:"all",predictions:"all",challenges:"all"},clubs:{clubs:"all",clubposts:"all"}};
+const COUNCIL_PAGES={overview:{gamevotes:"all",plays:"all",signups:"all",replies:"all",history:"all"},history:{history:"all"},members:{spaces:"all"},home:{signups:"all",replies:"all",gamevotes:"all",plays:"all"},play:{gamevotes:"all",plays:"all",predictions:"all",challenges:"all"},clubs:{clubs:"all",clubposts:"all"},club:{clubs:"all",clubposts:"all",picks:"all"}};
 function ensureData(){if(!db)return;const v=shownView()||"home",need={...BASE_STUDENT,...(PAGE_NEEDS[v]||{})};
   /* everyone's votes only on days a This or That or photo game still needs its live tally */
   if(v==="play"&&S.games.some(g=>(g.type==="versus"||g.type==="photo")&&!g.awarded&&g.id>=DAYS_AGO(2)))need.gamevotes="all";
