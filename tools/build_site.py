@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SITE_URL = "https://alexanderh8809-oss.github.io/Atlas/"
+SITE_URL = "https://marcusvance948.github.io/Atlas/"
 FIREBASE = "10.12.2"
 TITLE = "Avenues Student Hub"
 DESCRIPTION = ("Events, sign-ups, the weekly bulletin, opportunities and Student Council news "
