@@ -949,7 +949,7 @@ let CFG={approved:{},roles:{},school:"",president:null}, cfgExists=false, ADMIN=
 const EV_TYPES=[["meeting","StuCo meeting"],["event","School event"],["dance","Dance"],["trip","Trip"],["competition","Competition or tournament"],["fundraiser","Fundraiser"],["deadline","Deadline"],["assessment","Assessment"]];
 const TASK_STATUS=[["todo","To do"],["doing","In progress"],["done","Done"]];
 const PRI=[["high","High"],["normal","Normal"],["low","Low"]];
-const POST_TAGS=[["Announcement","Announcement"],["Event","Event"],["Reminder","Reminder"],["Opportunity","Opportunity"],["Spirit","Spirit"],["Schedule change","Schedule change"]];
+const POST_TAGS=[["Announcement","Announcement"],["Event","Event"],["Reminder","Reminder"],["Opportunity","Opportunity"],["Spirit","Spirit"],["Schedule change","Schedule change"],["Sports","Sports"]];
 const P_STAGES=[["draft","Draft"],["moved","Moved"],["seconded","Seconded"],["voting","Vote open"],["passed","Passed"],["failed","Failed"]];
 const ROLES=["President","Vice President","Secretary","Treasurer","Historian","Class Representative","Committee Chair","Member","Advisor"];
 const COMMITTEES=["Events","Spirit","Fundraising","Communications","Service"];
@@ -1224,7 +1224,7 @@ function taskCard(t,st,i){
 }
 
 /* bulletin */
-function sortedPosts(){return[...S.bulletin].sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.date||"").localeCompare(a.date||""))}
+function sortedPosts(){return S.bulletin.filter(p=>!p.removed).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.date||"").localeCompare(a.date||""))}
 
 /* ---------- suggestions ---------- */
 function allSuggestions(){const out=[];for(const d of S.suggestions)for(const[k,v]of Object.entries(d.items||{}))if(v&&v.title)out.push({...v,key:k,uid:d.id});return out.sort((a,b)=>(b.at||"").localeCompare(a.at||""))}
@@ -1261,7 +1261,7 @@ const HOSTED=!!window.__signIn;
 const needAccess=what=>HOSTED?`<button class="btn sm" data-act="signin">Sign in</button> to ${what}.`:`To ${what}, you need contributor access to this page. Ask any Student Council member.`;
 
 /* Student Hub */
-function postCard(p){return`<article class="post ${p.pinned?"pinned":""}"><div class="meta"><span class="chip ${({Event:"gold",Opportunity:"good",Reminder:"bad","Schedule change":"bad",Spirit:"accent"})[p.tag]||""}">${esc(p.tag||"Announcement")}</span><span>${esc(longd(p.date))}</span>${p.pinned?`<span class="chip gold">Pinned</span>`:""}</div><h3>${esc(p.title)}</h3><p>${esc(p.body)}</p><div class="meta">${p.author?`Posted by ${who(p.author,"")}`:"Posted by Student Council"}<span class="sp"></span>${heartBtn(p.id)}${canAct()?`<button class="btn sm ghost" data-act="edit-post" data-id="${p.id}">Edit</button>`:""}</div></article>`}
+function postCard(p){return`<article class="post ${p.pinned?"pinned":""}"><div class="meta"><span class="chip ${({Event:"gold",Opportunity:"good",Reminder:"bad","Schedule change":"bad",Spirit:"accent",Sports:"good"})[p.tag]||""}">${esc(p.tag||"Announcement")}</span><span>${esc(longd(p.date))}</span>${p.pinned?`<span class="chip gold">Pinned</span>`:""}</div><h3>${esc(p.title)}</h3><p>${esc(p.body)}</p><div class="meta">${p.author?`Posted by ${who(p.author,"")}`:"Posted by Student Council"}<span class="sp"></span>${heartBtn(p.id)}${canAct()?`<button class="btn sm ghost" data-act="edit-post" data-id="${p.id}">Edit</button>`:""}</div></article>`}
 function bulletin(){
   const posts=sortedPosts(),pinned=posts.filter(p=>p.pinned),groups=[];
   for(const p of posts.filter(p=>!p.pinned)){const k=weekStart(p.date);let g=groups.find(x=>x.k===k);if(!g)groups.push(g={k,items:[]});g.items.push(p)}
@@ -1628,6 +1628,7 @@ function homeView(){
 /* Today: everything coming up in one list (school events, deadlines, sign-ups closing, opportunity deadlines, your own reminders) */
 function todayItems(){const in14=iso(addDays(new Date(),14)),out=[];
   for(const e of S.events)if(evVisible(e)&&e.date>=TODAY&&e.date<=in14)out.push({date:e.date,time:e.time,title:e.title,href:"#events",sub:[e.time?fmtTime(e.time):"",e.location||"",e.grade?"Your grade":""].filter(Boolean).join(", "),chip:e.type,chipL:label(EV_TYPES,e.type),due:e.type==="deadline"});
+  for(const p of S.bulletin)if(!p.removed)for(const g of p.games||[])if(g.date>=TODAY&&g.date<=in14)out.push({date:g.date,time:g.time,title:g.team+(g.opp?" vs "+g.opp:""),href:"#bulletin",sub:[g.time?fmtTime(g.time):"",g.place].filter(Boolean).join(", "),chip:"good",chipL:"Home game"});
   for(const e of S.events)if(evVisible(e)&&e.signup&&e.signup!=="none"&&e.closes&&e.closes>=TODAY&&e.closes<=in14&&!mySignups()[e.id])out.push({date:e.closes,title:`${label(SIGNUP_KINDS,e.signup)} for ${e.title}`,href:"#events",sub:"Sign-up closes",chip:"deadline",chipL:"Closes",due:true});
   for(const o of S.opps)if(o.deadline&&o.deadline>=TODAY&&o.deadline<=in14)out.push({date:o.deadline,title:`Apply: ${o.title}`,href:"#opportunities",sub:savedOpps.has(o.id)?"Saved":"",chip:"deadline",chipL:"Apply by",due:true});
   if(me.id&&canJoin())for(const x of Object.values(myMine().items||{}))if(x.date>=TODAY&&x.date<=in14)out.push({date:x.date,time:x.time,title:x.title,href:"#myspace",sub:[x.time?fmtTime(x.time):"","Only you"].filter(Boolean).join(", "),chip:"",chipL:""});
@@ -2105,6 +2106,30 @@ async function gameForm(date){const g=gameOn(date),key=S.gamekeys.find(k=>k.id==
 let settling=false;
 function settleAlert(){if(!canAct())return"";const due=S.games.filter(g=>g.date<TODAY&&!g.awarded);if(!due.length||settling)return"";
   return`<section class="changes settle"><h2>Points to settle</h2><ul><li><span>${due.length} finished game${due.length===1?"":"s"} (${due.map(g=>esc(short(g.date))).join(", ")}) still ${due.length===1?"needs":"need"} points added. This usually happens on its own when a council member opens the site.</span></li></ul><div class="toolbar"><button class="btn primary" data-act="settle-now">Add the points now</button></div></section>`}
+/* Home games: varsity home games from the school's athletics schedule (avenues.org reads the same public file).
+   A council member's browser keeps one "Home games this week" bulletin post per week (id homegames-<Monday>), and
+   tools/nightly does the same at 6:00. The text is built the same way in both places so they never fight. If a council
+   member edits the post's text, neither touches it again. */
+const ATHLETICS_URL="https://storage.googleapis.com/avenues-athletics-data/schedule.json";
+const GDAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],GMONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+let gamesTried=false;
+function homeGamesIn(data,from,to){return((data&&data.events)||[]).filter(e=>e.type==="game"&&e.homeAway==="home"&&e.level==="Varsity"&&e.status!=="cancelled"&&!e.hidden&&e.start&&e.start.slice(0,10)>=from&&e.start.slice(0,10)<=to)
+  .sort((a,b)=>a.start.localeCompare(b.start)).map(e=>({date:e.start.slice(0,10),time:e.timeTbd?"":e.start.slice(11,16),team:e.team||"",opp:e.opponent||"",place:[/avenues/i.test(e.venue||"")?"":e.venue||"",e.subsite||""].filter((x,i,a)=>x&&a.indexOf(x)===i).join(", ")}))}
+function gameLine(g){const[y,m,d]=g.date.split("-").map(Number),wd=GDAYS[new Date(y,m-1,d).getDay()];let t="Time TBD";if(g.time){const[h,mi]=g.time.split(":").map(Number);t=((h+11)%12+1)+":"+String(mi).padStart(2,"0")+(h<12?" AM":" PM")}
+  return wd+", "+GMONTHS[m-1]+" "+d+" · "+t+" · "+g.team+(g.opp?" vs "+g.opp:"")+(g.place?" · "+g.place:"")}
+function homeGamesPost(games){return{title:games.length===1?"Home game this week: "+games[0].team+(games[0].opp?" vs "+games[0].opp:""):games.length+" home games this week",
+  body:"Come cheer on the Aviators at home:\n\n"+games.map(gameLine).join("\n")+"\n\nFrom the Aviators athletics schedule. Times can change, so check avenues.org before you go."}}
+async function postHomeGames(){
+  if(gamesTried||!db||!canCouncil()||!canWrite||typeof fetch!=="function")return;gamesTried=true;
+  try{const r=await fetch(ATHLETICS_URL,{cache:"no-cache"});if(!r.ok)return;const data=await r.json();
+    const wk=weekStart(TODAY),ref=col("bulletin").doc("homegames-"+wk),cur=await ref.get(),old=cur.exists?cur.data():null;
+    if(old&&(old.removed||old.body!==old.autoBody))return;
+    const from=(old&&old.from)||TODAY,games=homeGamesIn(data,from,iso(addDays(parse(wk),6)));
+    if(!games.length){if(old)await ref.delete();return}
+    const post=homeGamesPost(games);if(old&&old.title===post.title&&old.body===post.body)return;
+    await ref.set({...(old||{}),...post,autoBody:post.body,games,from,tag:"Sports",date:(old&&old.date)||TODAY,author:(old&&old.author)||"",pinned:!!(old&&old.pinned),auto:true,at:(old&&old.at)||new Date().toISOString()})
+  }catch(e){}
+}
 async function settleGames(){
   if(settling||!db||!canCouncil()||!canWrite||!["games","gamevotes","plays","scores","gamekeys"].every(c=>LEAN?fullData(c):loaded.has(c)))return;
   const due=S.games.filter(g=>g.date<TODAY&&!g.awarded);if(!due.length)return;settling=true;
@@ -2695,7 +2720,7 @@ function crud(colName,{title,fields,noun,kind,titleKey="title"}){
     const doc=id&&S[colName].find(x=>x.id===id);
     openForm({title:doc?`Edit ${noun}`:title,fields,values:doc||preset,
       submit:vals=>doc?save(()=>col(colName).doc(id).update(vals),"Saved",["edited",kind,vals[titleKey]]):save(()=>col(colName).add({...vals,created:new Date().toISOString(),createdBy:me.id||null}),`${noun[0].toUpperCase()+noun.slice(1)} added`,["added",kind,vals[titleKey]]),
-      onDelete:doc?()=>save(()=>col(colName).doc(id).delete(),`${noun[0].toUpperCase()+noun.slice(1)} deleted`,["deleted",kind,doc[titleKey]]):null});
+      onDelete:doc?()=>save(()=>doc.auto?col(colName).doc(id).update({removed:true}):col(colName).doc(id).delete(),`${noun[0].toUpperCase()+noun.slice(1)} deleted`,["deleted",kind,doc[titleKey]]):null});
   };
 }
 const PROFILE_FIELDS=[{id:"name",label:"Full name",required:true,full:true},{id:"grade",label:"Grade"},{id:"committee",label:"Committee",list:COMMITTEES},{id:"bio",label:"About you",type:"textarea",placeholder:"What you do on council, what you want to get done this year, a fun fact."},{id:"photo",label:"Photo",type:"photo"}];
@@ -2964,7 +2989,7 @@ function want(c,lvl){
   const cur=SUBS[c];if(cur&&LV[cur.lvl]>=LV[lvl])return;
   if(cur&&cur.unsub)try{cur.unsub()}catch(e){}
   loaded.delete(c);SUBS[c]={lvl,unsub:null};
-  const got=docs=>{S[c]=docs;if(c==="scores"){const st=docs.find(d=>d.id==="_stats");if(st)STATS=st}render();if(c==="members")autoApprove();settleGames();writeStats()};
+  const got=docs=>{S[c]=docs;if(c==="scores"){const st=docs.find(d=>d.id==="_stats");if(st)STATS=st}render();if(c==="members")autoApprove();settleGames();writeStats();postHomeGames()};
   if(lvl==="self"){
     const ids=c==="scores"?[me.id,"_settings","_stats"]:[me.id],parts={};let n=0;
     const uns=ids.map(id=>db.doc(c+"/"+id).onSnapshot(d=>{if(id==="_stats"){STATS=d.exists?d.data():{}}else parts[id]=d.exists?{id,...d.data()}:null;if(++n>=ids.length||loaded.has(c)){subDone(c,d);got(Object.values(parts).filter(Boolean))}},subFail));

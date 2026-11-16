@@ -1,6 +1,6 @@
 # Handoff: Atlas (Avenues Student Hub)
 
-Everything a new session needs to keep building this site. Last updated 2026-11-16.
+Everything a new session needs to keep building this site. Last updated 2026-11-16 (home games).
 
 ## What it is
 
@@ -60,6 +60,8 @@ git push origin main "${SPLIT}:refs/heads/pages"   # owner only; force-push is b
 - **Notifications (MySpace):** phone notifications (FCM; key in `CFG.vapidKey`, set by the president; token saved to `mine/<uid>.push`; `sw.js` shows them) and a weekly email opt-in (`mine/<uid>.digest`). Both are sent by `tools/nightly`.
 - **Inbox** (bell in the top bar): built in the browser from existing data (approvals, council replies and status changes, replies to your posts, points and streak bonuses, weekly placing, shout-outs, saved-opportunity and RSVP reminders). Seen time is `mine/<uid>.inboxSeen`. Approvals now save `decidedAt`. Phone push comes from `tools/nightly`.
 - **Data loading (read budget):** Firestore bills one read per document. Each page listens only to what it shows (`ensureData()`, `BASE_STUDENT`, `PAGE_NEEDS`, `QUERIES` near the end of the script): `self` = only your own doc, `query` = limited (newest N, upcoming), `all` = whole collection. Counts that need everyone's docs (likes, sign-ups, replies, reply notifications, grade totals, top players, weekly ranks) come from `scores/_stats`, rewritten by a council browser on Overview (`writeStats`, at most every 30 s, only when changed). Who's going to an event is a per-event query (`loadGoing`). The skills search loads profiles only when you type. Council view still loads everything it needs for approvals and settlement. The adapter adds `db.query()` (no offline persistence: it made second visits hang on the cached copy); the claude.ai artifact has no queries, so it falls back to loading everything. Measured with 300 test students: a student opening Today went from ~2,200 reads to ~80; visiting every page ~250. When adding a feature, add its collections to `PAGE_NEEDS` and never subscribe a per-student collection with `all` on a student page.
+- **Home games (Sports):** varsity home games come from the public file behind avenues.org's athletics page (`https://storage.googleapis.com/avenues-athletics-data/schedule.json`, refreshed by the school, readable from any site). One bulletin post per week, id `homegames-<Monday>`, tag `Sports`, with a `games` list that also feeds "Coming up" as "Home game". A council member's browser writes it (`postHomeGames()`), and so does `tools/nightly` at 6:00 (`homeGames()`). The text is built identically in both, so keep them in sync. If council edits the text (`body` no longer equals `autoBody`) or deletes it (sets `removed`, since auto posts are hidden, not deleted), neither touches it again that week.
+- **Instagram (@avenuesed):** not automated. Instagram has no public feed access; it needs a token from the account owner (the school's communications team) through Meta's Instagram API.
 - **Data per person** lives in `<collection>/<uid>` documents with an `items` map (suggestions, signups, lostfound, bookings, gamevotes, replies…), written only by that person.
 
 ## Testing approach that works
