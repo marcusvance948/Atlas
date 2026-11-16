@@ -4,7 +4,7 @@
  *   07:00  morning phone notification (today's game, your streak, yesterday's points)
  *   12:00, 16:00  rewrite the summary so like, sign-up and reply counts stay fresh
  *   Sunday 17:00  weekly email digest to students who turned it on
- *   06:00  "Home games this week" bulletin post from the Aviators athletics schedule (varsity home games)
+ *   06:00  game-day bulletin post (varsity home games, NYSAIS and ACIS finals) from the Aviators athletics schedule
  * It signs in to Firestore as the Google account that runs it, so that account must be an Owner or Editor
  * of the Firebase project. No keys are stored anywhere. Set up once: paste Code.gs and appsscript.json,
  * run setup(), allow access. See README.md.
@@ -32,14 +32,14 @@ function tick() {
   var now = new Date(), h = +Utilities.formatDate(now, TZ, "H"), dow = +Utilities.formatDate(now, TZ, "u") % 7, out = {};
   if (h === 5) out.settle = settle();
   if (STATS_HOURS.indexOf(h) >= 0) out.stats = writeStats();
-  if (h === GAMES_HOUR) out.games = homeGames();
+  if (h === GAMES_HOUR) out.games = gameDay();
   if (h === PUSH_HOUR) out.push = morningPush();
   // Sunday evening, then Monday and Tuesday for anyone the daily email limit left out
   if (h === DIGEST.hour && [DIGEST.day, (DIGEST.day + 1) % 7, (DIGEST.day + 2) % 7].indexOf(dow) >= 0) out.digest = weeklyDigest();
   if (Object.keys(out).length) Logger.log(JSON.stringify(out));
 }
 /** Run everything except notifications and email right now (safe to run any time). */
-function runNow() { return { settle: settle(), stats: writeStats(), games: homeGames() }; }
+function runNow() { return { settle: settle(), stats: writeStats(), games: gameDay() }; }
 
 /* ---------------- dates ---------------- */
 function today_() { return Utilities.formatDate(new Date(), TZ, "yyyy-MM-dd"); }
@@ -262,42 +262,42 @@ function weeklyDigest() {
   return "emailed " + sent + (mine.length > sent ? " (" + (mine.length - sent) + " left for tomorrow)" : "");
 }
 
-/* ---------------- home games ----------------
- * Keeps one "Home games this week" bulletin post per week (id homegames-<Monday>) with this week's varsity home games.
- * Mirrors homeGamesIn(), gameLine(), homeGamesPost() and postHomeGames() in stuco-hub.html; the text must come out
- * identical in both, so change both together. A post a council member edited or deleted is left alone. */
-var GDAYS_ = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], GMONTHS_ = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-function homeGamesIn_(data, from, to) {
+/* ---------------- game day ----------------
+ * On the day of a varsity home game, or an NYSAIS or ACIS final (home or away), one bulletin post (id gameday-<date>).
+ * Mirrors isFinal, gameDayGames(), gameTime(), gameLine(), gameDayPost() and autoPost() in stuco-hub.html; the text
+ * must come out identical in both, so change both together. A post a council member edited or deleted is left alone.
+ * (The weekly lunch post is made by a council member's browser only.) */
+var GDAYS_ = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function isFinal_(e) {
+  return /\b(nysais|acis)\b/i.test([e.eventName, e.opponent, e.venue].join(" ")) && /\bfinals?\b|championship/i.test([e.eventName, e.opponent].join(" "));
+}
+function gameDayGames_(data, day) {
   return ((data && data.events) || []).filter(function (e) {
-    return e.type === "game" && e.homeAway === "home" && e.level === "Varsity" && e.status !== "cancelled" && !e.hidden && e.start &&
-      e.start.slice(0, 10) >= from && e.start.slice(0, 10) <= to;
+    return e.type === "game" && e.status !== "cancelled" && !e.hidden && e.start && e.start.slice(0, 10) === day &&
+      ((e.homeAway === "home" && e.level === "Varsity") || isFinal_(e));
   }).sort(function (a, b) { return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; }).map(function (e) {
-    return { date: e.start.slice(0, 10), time: e.timeTbd ? "" : e.start.slice(11, 16), team: e.team || "", opp: e.opponent || "",
+    return { date: e.start.slice(0, 10), time: e.timeTbd ? "" : e.start.slice(11, 16), team: e.team || "", opp: e.opponent || "", home: e.homeAway === "home", final: isFinal_(e), label: e.eventName || "",
       place: [/avenues/i.test(e.venue || "") ? "" : e.venue || "", e.subsite || ""].filter(function (x, i, a) { return x && a.indexOf(x) === i; }).join(", ") };
   });
 }
-function gameLine_(g) {
-  var p = g.date.split("-").map(Number), wd = GDAYS_[new Date(p[0], p[1] - 1, p[2]).getDay()], t = "Time TBD";
-  if (g.time) { var hm = g.time.split(":").map(Number); t = ((hm[0] + 11) % 12 + 1) + ":" + pad_(hm[1]) + (hm[0] < 12 ? " AM" : " PM"); }
-  return wd + ", " + GMONTHS_[p[1] - 1] + " " + p[2] + " · " + t + " · " + g.team + (g.opp ? " vs " + g.opp : "") + (g.place ? " · " + g.place : "");
+function gameTime_(t) { if (!t) return "time TBD"; var hm = t.split(":").map(Number); return ((hm[0] + 11) % 12 + 1) + ":" + pad_(hm[1]) + (hm[0] < 12 ? " AM" : " PM"); }
+function gameLine_(g) { return gameTime_(g.time) + " · " + (g.final ? (g.label || "Final") + ": " : "") + g.team + (g.opp ? (g.home ? " vs " : " at ") + g.opp : "") + (g.place ? " · " + g.place : ""); }
+function gameDayPost_(games) {
+  var one = games.length === 1 ? games[0] : null, fin = games.some(function (g) { return g.final; });
+  return { title: one ? (one.final ? "Final today: " : "Home game today: ") + one.team + (one.opp ? (one.home ? " vs " : " at ") + one.opp : "") + ", " + gameTime_(one.time) : games.length + " big games today",
+    body: (fin ? "It's championship day. Come cheer on the Aviators:" : "Come cheer on the Aviators at home:") + "\n\n" + games.map(gameLine_).join("\n") + "\n\nFrom the Aviators athletics schedule. Times can change, so check avenues.org before you go." };
 }
-function homeGamesPost_(games) {
-  return { title: games.length === 1 ? "Home game this week: " + games[0].team + (games[0].opp ? " vs " + games[0].opp : "") : games.length + " home games this week",
-    body: "Come cheer on the Aviators at home:\n\n" + games.map(gameLine_).join("\n") + "\n\nFrom the Aviators athletics schedule. Times can change, so check avenues.org before you go." };
-}
-function homeGames() {
+function gameDay() {
   var res = UrlFetchApp.fetch(ATHLETICS_URL, { muteHttpExceptions: true });
   if (res.getResponseCode() !== 200) return "schedule unavailable (" + res.getResponseCode() + ")";
-  var data = JSON.parse(res.getContentText()), today = today_(), wk = weekStart_(today), path = "bulletin/homegames-" + wk;
+  var today = today_(), games = gameDayGames_(JSON.parse(res.getContentText()), today), path = "bulletin/gameday-" + today;
   var cur = call_("get", BASE + "/" + path), old = cur ? decFields_(cur.fields) : null;
   if (old && (old.removed || old.body !== old.autoBody)) return "left alone (edited or removed by council)";
-  var from = (old && old.from) || today, games = homeGamesIn_(data, from, addDays_(wk, 6));
-  if (!games.length) { if (old) call_("delete", BASE + "/" + path); return "no varsity home games"; }
-  var post = homeGamesPost_(games);
-  if (old && old.title === post.title && old.body === post.body) return "up to date (" + games.length + ")";
+  if (!games.length) { if (old) call_("delete", BASE + "/" + path); return "no big games today"; }
+  var post = gameDayPost_(games);
+  if (old && old.title === post.title && old.body === post.body) return "up to date";
   var doc = old || {};
-  Object.keys(post).forEach(function (k) { doc[k] = post[k]; });
-  doc.autoBody = post.body; doc.games = games; doc.from = from; doc.tag = "Sports"; doc.auto = true;
+  doc.title = post.title; doc.body = post.body; doc.games = games; doc.tag = "Sports"; doc.autoBody = post.body; doc.auto = true;
   doc.date = (old && old.date) || today; doc.author = (old && old.author) || ""; doc.pinned = !!(old && old.pinned); doc.at = (old && old.at) || new Date().toISOString();
   commit_([replaceWrite_(path, doc)]);
   return (old ? "updated" : "posted") + " (" + games.length + ")";

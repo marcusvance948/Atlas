@@ -934,8 +934,8 @@ a.fchip{text-decoration:none;display:inline-block}
 <script>
 const STUDENT_NAV=[["home","Today","home"],["explore","Explore","events"],["play","Play","play"],["stuco","StuCo","stuco"]];
 const COUNCIL_NAV=[["overview","Overview"],["tasks","Tasks"],["proposals","Proposals"],["attendance","Attendance"],["members","Members"],["history","History"]];
-const ROUTES={home:"home",bulletin:"home",events:"explore",calendar:"explore",clubs:"explore",opportunities:"explore",play:"play",stuco:"stuco",suggestions:"stuco",lost:"stuco",voice:"stuco",working:"stuco",myspace:"me",overview:"overview",tasks:"tasks",proposals:"proposals",attendance:"attendance",members:"members",history:"history"};
-const STUDENT_ROUTES=["home","bulletin","events","calendar","clubs","opportunities","play","stuco","suggestions","lost","voice","working","myspace"];
+const ROUTES={home:"home",bulletin:"home",events:"explore",calendar:"explore",clubs:"explore",opportunities:"explore",officehours:"explore",play:"play",stuco:"stuco",suggestions:"stuco",lost:"stuco",voice:"stuco",working:"stuco",myspace:"me",overview:"overview",tasks:"tasks",proposals:"proposals",attendance:"attendance",members:"members",history:"history"};
+const STUDENT_ROUTES=["home","bulletin","events","calendar","clubs","opportunities","officehours","play","stuco","suggestions","lost","voice","working","myspace"];
 /* old links keep working: each old page name points at where that content lives now */
 const ALIAS={hub:["home"],community:["home"],create:["home"],collabs:["home"],life:["home","sec-photos"],connect:["clubs"],explore:["events"],challenges:["play","sec-game"],dares:["play","sec-challenges"],leaderboard:["play","sec-leaderboard"]};
 let pendingScroll=null;
@@ -949,7 +949,7 @@ let CFG={approved:{},roles:{},school:"",president:null}, cfgExists=false, ADMIN=
 const EV_TYPES=[["meeting","StuCo meeting"],["event","School event"],["dance","Dance"],["trip","Trip"],["competition","Competition or tournament"],["fundraiser","Fundraiser"],["deadline","Deadline"],["assessment","Assessment"]];
 const TASK_STATUS=[["todo","To do"],["doing","In progress"],["done","Done"]];
 const PRI=[["high","High"],["normal","Normal"],["low","Low"]];
-const POST_TAGS=[["Announcement","Announcement"],["Event","Event"],["Reminder","Reminder"],["Opportunity","Opportunity"],["Spirit","Spirit"],["Schedule change","Schedule change"],["Sports","Sports"]];
+const POST_TAGS=[["Announcement","Announcement"],["Event","Event"],["Reminder","Reminder"],["Opportunity","Opportunity"],["Spirit","Spirit"],["Schedule change","Schedule change"],["Sports","Sports"],["Lunch","Lunch"]];
 const P_STAGES=[["draft","Draft"],["moved","Moved"],["seconded","Seconded"],["voting","Vote open"],["passed","Passed"],["failed","Failed"]];
 const ROLES=["President","Vice President","Secretary","Treasurer","Historian","Class Representative","Committee Chair","Member","Advisor"];
 const COMMITTEES=["Events","Spirit","Fundraising","Communications","Service"];
@@ -1094,7 +1094,7 @@ function render(){
     else if(d&&isApproved(d)&&!isEditor)banner=`<div class="banner">You're an approved council member. Ask the president to give you Editor access to this page so you can make changes.</div>`;}
   if(preview&&canCouncil())banner=`<div class="banner preview"><span>You're seeing the site the way students see it.</span><button class="btn sm" data-act="mode" data-to="council">Back to council view</button></div>`+banner;
   if(lockedOut())banner+=`<div class="banner">You're signed in as ${esc(me.email||"an account")}, which isn't on the Avenues student list. Sign in with your school email, or ask Student Council to add you.</div>`;
-  const VIEWFN={bulletin,events:exploreTab,calendar:exploreTab,clubs:exploreTab,opportunities:exploreTab,play:playPage,stuco:stucoPage,suggestions:stucoPage,lost:stucoPage,voice:stucoPage,working:stucoPage,myspace:mySpaceView,overview,tasks:()=>tasks(),proposals,attendance,members,history:historyView};
+  const VIEWFN={bulletin,events:exploreTab,calendar:exploreTab,clubs:exploreTab,opportunities:exploreTab,officehours:exploreTab,play:playPage,stuco:stucoPage,suggestions:stucoPage,lost:stucoPage,voice:stucoPage,working:stucoPage,myspace:mySpaceView,overview,tasks:()=>tasks(),proposals,attendance,members,history:historyView};
   $("#main").innerHTML=banner+VIEWFN[shownView()]();
   $("#bandH1").innerHTML=pageHead.title||"";const bc=$("#bandCtx");bc.innerHTML=pageHead.context||"";bc.hidden=!pageHead.context;
   const sn=$("#main .subnav"),bs=$("#bandSub");bs.innerHTML="";if(sn)bs.appendChild(sn);
@@ -1261,7 +1261,7 @@ const HOSTED=!!window.__signIn;
 const needAccess=what=>HOSTED?`<button class="btn sm" data-act="signin">Sign in</button> to ${what}.`:`To ${what}, you need contributor access to this page. Ask any Student Council member.`;
 
 /* Student Hub */
-function postCard(p){return`<article class="post ${p.pinned?"pinned":""}"><div class="meta"><span class="chip ${({Event:"gold",Opportunity:"good",Reminder:"bad","Schedule change":"bad",Spirit:"accent",Sports:"good"})[p.tag]||""}">${esc(p.tag||"Announcement")}</span><span>${esc(longd(p.date))}</span>${p.pinned?`<span class="chip gold">Pinned</span>`:""}</div><h3>${esc(p.title)}</h3><p>${esc(p.body)}</p><div class="meta">${p.author?`Posted by ${who(p.author,"")}`:"Posted by Student Council"}<span class="sp"></span>${heartBtn(p.id)}${canAct()?`<button class="btn sm ghost" data-act="edit-post" data-id="${p.id}">Edit</button>`:""}</div></article>`}
+function postCard(p){return`<article class="post ${p.pinned?"pinned":""}"><div class="meta"><span class="chip ${({Event:"gold",Opportunity:"good",Reminder:"bad","Schedule change":"bad",Spirit:"accent",Sports:"good",Lunch:"gold"})[p.tag]||""}">${esc(p.tag||"Announcement")}</span><span>${esc(longd(p.date))}</span>${p.pinned?`<span class="chip gold">Pinned</span>`:""}</div><h3>${esc(p.title)}</h3><p>${esc(p.body)}</p><div class="meta">${p.author?`Posted by ${who(p.author,"")}`:"Posted by Student Council"}<span class="sp"></span>${heartBtn(p.id)}${canAct()?`<button class="btn sm ghost" data-act="edit-post" data-id="${p.id}">Edit</button>`:""}</div></article>`}
 function bulletin(){
   const posts=sortedPosts(),pinned=posts.filter(p=>p.pinned),groups=[];
   for(const p of posts.filter(p=>!p.pinned)){const k=weekStart(p.date);let g=groups.find(x=>x.k===k);if(!g)groups.push(g={k,items:[]});g.items.push(p)}
@@ -1368,6 +1368,129 @@ function oppCard(o){
   return`<article class="opp"><div class="opp-top"><span class="chip">${label(OPP_GROUPS,oppGroup(o.category))}</span>${o.deadline?`<span class="${soon?"overdue":"sub"}">${days<0?"Closed":`Apply by ${esc(short(o.deadline))}${soon?`, ${days===0?"today":days===1?"tomorrow":days+" days left"}`:""}`}</span>`:`<span class="sub">No deadline</span>`}</div><h3>${esc(o.title)}</h3>${o.org?`<div class="sub">${esc(o.org)}</div>`:""}${o.details?`<p>${esc(o.details)}</p>`:""}${o.who?`<div class="sub">Who can apply: ${esc(o.who)}</div>`:""}${o.byName?`<div class="sub">Posted by ${esc(o.byName)}</div>`:""}<div class="toolbar">${link?`<a class="btn sm primary" href="${esc(link)}" target="_blank" rel="noopener">How to apply</a>`:""}<button class="btn sm" data-act="opp-save" data-id="${o.id}" aria-pressed="${saved}">${saved?"Saved":"Save"}</button>${canAct()?`<button class="btn sm ghost" data-act="edit-opp" data-id="${o.id}">Edit</button>`:""}</div></article>`;
 }
 
+/* Office hours: Upper Division faculty office hours (from the school's office hours sheet; update OFFICE_HOURS when
+   a new one comes out). Days follow the 10-day rotation. Council sets "Today is Day N" once (scores/_settings.dayCycle)
+   and the site counts weekdays from there; set it again after a holiday or break. */
+const OFFICE_HOURS=`Von Ryan Abrantes|2,8:15-8:50,818;7,8:15-8:50,818
+Rana Akkawi|4,8:15-8:45,711;7,8:15-8:45,711
+Eva Alavez|4,8:15-8:45,716;10,3:45-4:15,716
+Charbel Alkawkabany|5,8:15-8:50,901;10,8:15-8:50,901
+David Allyn|4,3:45-4:15,713;7,3:45-4:15,713
+David Atkin|2,8:00-8:50,809;9,8:00-8:50,512 @ 536
+Phoebe Barnden|1,3:45-4:15,WAM office;10,3:45-4:15,WAM office
+Spencer Baron|1,8:00-8:50,7 South;6,8:00-8:50,7 South
+Mollie Beek|2,3:45-4:15,613;7,3:45-4:15,613
+Adam Bergman|5,3:45-4:30,912;10,3:45-4:30,912
+Miguel Angel Blanco Martinez|3,8:15-8:45,600;7,3:45-4:15,600
+Elizabeth Blanken|2,8:15-8:45,602;7,8:15-8:45,602
+Stephen Bonnett|4,8:15-8:50,8 South;9,8:15-8:50,8 South
+Nadine Bou Rached|1,3:45-4:30,502 @ 536;6,3:45-4:30,502 @ 536
+Alex Brinkman-Young|5,8:00-8:50,611;6,3:45-4:15,911
+Jon Brown|4,8:15-8:50,709;7,8:15-8:50,709
+Jim Burns|4,3:45-3:40,702;6,3:45-3:40,702
+Steven Carpenter|1,8:15-8:50,536 East;6,8:15-8:50,536 East
+Narcy Carranza|3,8:15-8:45,604;8,8:15-8:45,604
+Isil Celimli|2,8:15-8:45,808;7,8:15-8:45,808
+Jenny Chan|2,3:45-4:15,704;7,3:45-4:15,704
+Sam Choi|4,8:15-8:45,816;7,8:15-8:45,816
+Paul Clairmont|1,8:00-8:50,10th floor;6,8:00-8:50,10th floor
+Julia Cohen|3,8:15-8:50,7 South;8,8:15-8:50,7 South
+Helen Conroy|2,8:00-8:45,603;7,8:00-8:45,603
+Allegra Coryell|2,8:00-8:45,717A;7,8:00-8:45,717A
+Amanda De La Cruz|4,8:00-8:50,1000N;7,8:00-8:50,1000N
+Jonathan Deegan|1,8:00-8:45,7 South;6,8:00-8:45,7 South
+Theresa Dietrich|2,3:45-4:30,715;6,3:45-4:30,715
+Brendan Dolan|1,8:00-8:45,103;6,8:00-8:45,103
+Carlos Egaña|5,8:15-8:50,7 South;10,8:15-8:50,7 South
+Ari Elmayan|2,8:15-8:50,512 @ 536;8,8:15-8:50,512 @ 536
+Bailey Farris|2,8:00-8:45,Room 814;7,8:00-8:45,Room 814
+Patrick Galarza|5,3:45-4:15,7 Commons;10,3:45-4:15,7 Commons
+Sagarika Gami|1,8:15-8:50,808;6,8:15-8:50,808
+Deborah Gomez|2,8:15-8:45,9 Commons;7,8:15-8:45,9 Commons
+Eduardo Guzmán (8)|2,3:45-4:15,705;7,3:45-4:15,705
+Eduardo Guzmán (6)|1,3:45-4:30,705;6,3:45-4:30,705
+Quinn Hargitai|1,8:15-8:50,612;6,8:15-8:50,612
+Emma Heath|5,8:15-8:50,9 Commons;9,8:15-8:50,9 Commons
+Daniel Heijmen|4,8:15-8:50,808;6,8:15-8:50,808
+Dana Helwick|4,8:15-8:45,807;7,8:15-8:45,807
+Angela Hiner|2,8:15-8:45,6 Commons;9,8:15-8:45,6 Commons
+Kate Howard|1,8:15-8:50,504 @ 536;8,8:15-8:50,504 @ 536
+Holly Hutcheson|4,8:15-8:50,814;9,8:15-8:50,814
+Delanie Ipsen|2,3:45-4:30,706;7,3:45-4:30,706
+Melissa Jacob|3,8:15-8:50,WAM Office;8,8:15-8:50,WAM Office
+Gruff Jones|2,8:15-8:45,813;9,8:15-8:45,813
+Rachel Kreibich|4,8:15-8:45,601;9,8:15-8:45,601
+Rick Krupa|4,8:00-8:50,WAM Office;9,8:00-8:50,WAM Office
+Crystal Lauren|1,8:15-8:50,704;6,8:15-8:50,704;2,8:15-8:50,704;7,8:15-8:50,704;3,8:15-8:50,704;8,8:15-8:50,704;5,8:15-8:50,704;10,8:15-8:50,704
+Rachel Leu|2,3:45-4:15,712;9,3:45-4:15,712
+Daniel Li|3,8:15-8:45,503 @ 536;8,8:15-8:45,503 @ 536
+Rui Li|2,8:15-8:45,610;8,8:15-8:45,610
+Sam Liberman|3,8:15-8:50,702;4,8:15-8:50,702
+Miranda Liu|4,3:45-4:15,712;7,3:45-4:15,712
+Yongling Lu|1,8:15-9:00,910;7,8:15-9:00,910
+Nancy Ma|2,8:15-8:50,816A;9,8:15-8:50,816A
+Mykel Macedon|1,8:15-8:45,601;6,8:15-8:45,601
+Tori Marroquin|1,3:45-4:15,603;6,3:45-4:15,603
+Beth Miller|2,8:15-8:50,604;7,8:15-8:50,604
+Drew Ohringer|2,3:45-4:15,9 Commons;6,3:45-4:15,9 Commons
+Daniella Omalley|4,3:45-4:15,716;6,3:45-4:15,716
+Giovanni Palacio|2,8:00-8:50,9 Commons;9,8:00-8:50,9 Commons
+Marlene Patricia|2,8:15-8:50,8 South;7,8:15-8:50,8 South
+Dylan Peden|2,8:15-8:50,1003;7,8:15-8:50,1003;3,8:15-8:50,1003;9,8:15-8:50,1003;4,8:15-8:50,1003
+Miguel Pérez-Glassner|3,8:15-8:50,702;7,3:45-4:30,702
+Jenna Peveraro|3,8:00-8:50,WAM Office;8,8:00-8:50,WAM Office
+JD Pirtle|5,8:15-8:50,iLab;10,8:15-8:50,iLab
+Alex Polanco|5,8:15-8:50,813;10,8:15-8:50,813
+Lila Pollack|1,8:00-8:40,103;6,8:00-8:40,103
+Kathleen Radigan|4,8:00-8:50,808;9,8:00-8:50,808
+Raaj Raniga|9,8:15-8:50,702;10,8:15-8:50,702
+Chris Richter|4,8:15-8:50,700;7,8:15-8:50,700
+Jess Roth|3,8:00-8:45,818;8,8:00-8:45,818
+Freddy Ryle|4,8:00-8:45,602;9,8:00-8:45,602
+Trevor Safford|2,8:15-8:50,600;7,8:15-8:50,600
+Nikki Sandschaper|4,8:15-8:50,805;9,8:15-8:50,805
+Gustavo Schartz|1,8:00-8:40,Annex;6,8:00-8:40,Annex
+Gretel Schwartzott|1,8:00-8:50,517 @ 536;6,8:15-8:50,517 @ 536
+Jonathan Scolnick|3,8:15-8:50,808;9,8:15-8:50,808
+Andrew Senyszyn|4,8:10-8:45,WAM Office;6,3:45-4:15,WAM Office
+Abigail Simpson (8)|3,8:15-8:45,703;8,8:15-8:45,703
+Abigail Simpson (7)|5,8:15-8:45,703;10,8:15-8:45,703
+Kristin Smith|3,8:15-8:45,808;8,8:15-8:45,808
+Micheal Somersel|3,8:15-8:50,9 Commons;8,8:15-8:50,9 Commons
+Warren Tappe|1,8:15-8:50,505 @ 536;6,8:15-8:50,505 @ 536;3,8:15-8:50,505 @ 536;8,8:15-8:50,505 @ 536
+Molly Tong|2,3:45-4:15,712;7,3:45-4:15,712
+Olga Valeria|1,3:45-4:15,714;7,8:15-8:50,714
+Alyssa Venora|1,3:45-4:15,103, BBT;6,3:45-4:15,103, BBT
+Tiffany Walters|5,8:15-8:45,614;10,8:15-8:45,614
+Ariel Wind|1,3:45-4:30,7 South;9,3:45-4:30,7 South
+Tia Wong|2,8:00-8:50,815;10,8:00-8:50,815
+Jojo Yin|4,3:45-4:30,808;7,3:45-4:30,808
+Yan Zhen|3,8:15-8:45,610;8,8:15-8:45,610
+Korra Zhu|3,8:15-8:50,713;9,3:45-4:30,713`.split("\n").map(l=>{const[name,sl]=l.split("|");return{name,slots:sl.split(";").map(x=>{const[day,time,room]=x.split(",").map(s=>s.trim());return{day:+day,time,room:x.split(",").slice(2).join(",").trim()}})}});
+let ohQ="",ohDay="today";
+function schoolDay(date=TODAY){const c=(S.scores.find(d=>d.id==="_settings")||{}).dayCycle,d=parse(date);if(!c||!c.date||!c.day||d.getDay()%6===0)return 0;
+  const a=parse(c.date),lo=a<d?a:d,hi=a<d?d:a;let n=0;for(const x=new Date(lo);x<hi;){x.setDate(x.getDate()+1);if(x.getDay()%6!==0)n++}
+  return((Number(c.day)-1+(a<=d?n:-n))%10+10)%10+1}
+const ohMins=t=>{const[h,m]=(t.split("-")[0]||"").split(":").map(Number);return((h<7?h+12:h)*60)+(m||0)};
+const ohTime=t=>t.replace(/\s*-\s*/,"–");
+function ohToday(){const td=schoolDay();return td?OFFICE_HOURS.flatMap(t=>t.slots.filter(s=>s.day===td).map(s=>({...s,name:t.name}))).sort((a,b)=>ohMins(a.time)-ohMins(b.time)||a.name.localeCompare(b.name)):[]}
+function officeView(){const td=schoolDay();
+  return head("When and where Upper Division teachers hold office hours. Days follow the 10-day rotation.","Office hours",canAct()?`<button class="btn" data-act="set-day">${td?"Today is Day "+td+". Change":"Set today's Day"}</button>`:"")+
+  `<div class="oppbar"><div class="toolbar"><input id="ohQ" type="search" placeholder="Search a teacher or room" aria-label="Search office hours" value="${esc(ohQ)}"><select id="ohDay" aria-label="Which day">${[["today",td?`Today, Day ${td}`:"Today"],["all","All days"],...[1,2,3,4,5,6,7,8,9,10].map(n=>[String(n),"Day "+n])].map(([k,l])=>`<option value="${k}" ${ohDay===k?"selected":""}>${l}</option>`).join("")}</select></div></div><div id="ohList">${ohList()}</div>`}
+function ohList(){const q=ohQ.trim().toLowerCase(),td=schoolDay(),hit=(t,s)=>!q||(t.name+" "+(s?s.room:t.slots.map(x=>x.room).join(" "))).toLowerCase().includes(q);
+  const day=ohDay==="today"?td:ohDay==="all"?0:+ohDay;
+  if(ohDay==="today"&&!td){const wk=parse(TODAY).getDay()%6===0;return`<p class="sub" style="margin:0 0 12px">${wk?"No school today. Pick a day to see who's in.":canAct()?"Set today's Day (button above) so everyone sees today's office hours.":"Student Council hasn't set today's Day yet. Pick a day, or search a teacher."}</p>`+ohAll(q,hit)}
+  if(!day)return ohAll(q,hit);
+  const list=OFFICE_HOURS.flatMap(t=>t.slots.filter(s=>s.day===day&&hit(t,s)).map(s=>({...s,name:t.name}))).sort((a,b)=>ohMins(a.time)-ohMins(b.time)||a.name.localeCompare(b.name));
+  if(!list.length)return empty("Nothing matches","Try another day or search.");
+  const part=(l,t)=>l.length?`<section class="panel"><h2>${t}</h2><ul class="list">${l.map(s=>`<li><div class="grow"><div class="title">${esc(s.name)}</div><div class="sub">${esc(s.room)}</div></div><span class="chip">${esc(ohTime(s.time))}</span></li>`).join("")}</ul></section>`:"";
+  return part(list.filter(s=>ohMins(s.time)<12*60),"Before school")+part(list.filter(s=>ohMins(s.time)>=12*60),"After school")}
+function ohAll(q,hit){const l=OFFICE_HOURS.filter(t=>hit(t));/* already in last-name order, as on the school sheet */
+  return l.length?`<section class="panel"><ul class="list">${l.map(t=>`<li><div class="grow"><div class="title">${esc(t.name)}</div><div class="sub">${t.slots.slice().sort((a,b)=>a.day-b.day).map(s=>`Day ${s.day}, ${esc(ohTime(s.time))}, ${esc(s.room)}`).join(" · ")}</div></div></li>`).join("")}</ul></section>`:empty("Nothing matches","Try a different name or room.")}
+function ohPanel(){const td=schoolDay();if(!td)return"";const l=ohToday(),am=l.filter(s=>ohMins(s.time)<12*60).length;
+  return`<section class="panel"><h2>Office hours today <a href="#officehours">See all</a></h2><p class="sub" style="margin:8px 0 0">Today is <b>Day ${td}</b>. ${l.length?`${l.length} teachers have office hours: ${am} before school, ${l.length-am} after.`:"No office hours today."}</p></section>`}
+function lunchPanel(){const p=S.bulletin.find(x=>!x.removed&&x.menu&&x.menu[TODAY]);if(!p)return"";const o=p.menu[TODAY];
+  return`<section class="panel"><h2>Lunch today <a href="#bulletin">This week</a></h2><div style="margin-top:8px"><div class="title">${esc(o.entree||"See the menu")}</div>${o.veg&&o.veg!==o.entree?`<div class="sub">Vegetarian: ${esc(o.veg)}</div>`:""}${o.sides?`<div class="sub">Sides: ${esc(o.sides)}</div>`:""}${o.sandwich?`<div class="sub">Sandwich: ${esc(o.sandwich)}</div>`:""}</div></section>`}
 /* Student Voice */
 const myVotes=()=>(S.votes.find(d=>d.id===me.id)||{}).polls||{};
 const pollOpen=p=>p.status!=="closed"&&(!p.closes||p.closes>=TODAY);
@@ -1628,7 +1751,7 @@ function homeView(){
 /* Today: everything coming up in one list (school events, deadlines, sign-ups closing, opportunity deadlines, your own reminders) */
 function todayItems(){const in14=iso(addDays(new Date(),14)),out=[];
   for(const e of S.events)if(evVisible(e)&&e.date>=TODAY&&e.date<=in14)out.push({date:e.date,time:e.time,title:e.title,href:"#events",sub:[e.time?fmtTime(e.time):"",e.location||"",e.grade?"Your grade":""].filter(Boolean).join(", "),chip:e.type,chipL:label(EV_TYPES,e.type),due:e.type==="deadline"});
-  for(const p of S.bulletin)if(!p.removed)for(const g of p.games||[])if(g.date>=TODAY&&g.date<=in14)out.push({date:g.date,time:g.time,title:g.team+(g.opp?" vs "+g.opp:""),href:"#bulletin",sub:[g.time?fmtTime(g.time):"",g.place].filter(Boolean).join(", "),chip:"good",chipL:"Home game"});
+  for(const p of S.bulletin)if(!p.removed)for(const g of p.games||[])if(g.date>=TODAY&&g.date<=in14)out.push({date:g.date,time:g.time,title:g.team+(g.opp?(g.home===false?" at ":" vs ")+g.opp:""),href:"#bulletin",sub:[g.time?fmtTime(g.time):"",g.place].filter(Boolean).join(", "),chip:"good",chipL:g.final?"Final":g.home===false?"Away":"Home game"});
   for(const e of S.events)if(evVisible(e)&&e.signup&&e.signup!=="none"&&e.closes&&e.closes>=TODAY&&e.closes<=in14&&!mySignups()[e.id])out.push({date:e.closes,title:`${label(SIGNUP_KINDS,e.signup)} for ${e.title}`,href:"#events",sub:"Sign-up closes",chip:"deadline",chipL:"Closes",due:true});
   for(const o of S.opps)if(o.deadline&&o.deadline>=TODAY&&o.deadline<=in14)out.push({date:o.deadline,title:`Apply: ${o.title}`,href:"#opportunities",sub:savedOpps.has(o.id)?"Saved":"",chip:"deadline",chipL:"Apply by",due:true});
   if(me.id&&canJoin())for(const x of Object.values(myMine().items||{}))if(x.date>=TODAY&&x.date<=in14)out.push({date:x.date,time:x.time,title:x.title,href:"#myspace",sub:[x.time?fmtTime(x.time):"","Only you"].filter(Boolean).join(", "),chip:"",chipL:""});
@@ -1653,7 +1776,7 @@ function todayBody(){
     ${feat?`<section class="panel"><h2>Made at Avenues</h2><div class="home-feat">${feat}</div></section>`:""}
     <section class="panel today-feed"><h2>Community</h2>${feed}</section>
   </div>
-  <div class="t-rest">${installCard("today")}${winnersPanel()}<section class="panel">${raceMini()}</section>${bdayPanel()}${playlistPanel()}</div>
+  <div class="t-rest">${lunchPanel()}${ohPanel()}${installCard("today")}${winnersPanel()}<section class="panel">${raceMini()}</section>${bdayPanel()}${playlistPanel()}</div>
   </div>
   ${albums.length?`<section class="panel" id="sec-photos"><h2>Around Avenues</h2><div style="margin-top:12px">${beltsHTML(2)}</div>${canAct()?`<div class="albums">${albums.map(albumCard).join("")}</div>`:""}</section>`:`<span id="sec-photos"></span>`}
   ${reel?`<section class="home-reel"><div class="home-reel-head"><h2>Student Council lately</h2><a href="#working">See everything we've done</a></div>${reel}</section>`:""}`;
@@ -2106,30 +2229,59 @@ async function gameForm(date){const g=gameOn(date),key=S.gamekeys.find(k=>k.id==
 let settling=false;
 function settleAlert(){if(!canAct())return"";const due=S.games.filter(g=>g.date<TODAY&&!g.awarded);if(!due.length||settling)return"";
   return`<section class="changes settle"><h2>Points to settle</h2><ul><li><span>${due.length} finished game${due.length===1?"":"s"} (${due.map(g=>esc(short(g.date))).join(", ")}) still ${due.length===1?"needs":"need"} points added. This usually happens on its own when a council member opens the site.</span></li></ul><div class="toolbar"><button class="btn primary" data-act="settle-now">Add the points now</button></div></section>`}
-/* Home games: varsity home games from the school's athletics schedule (avenues.org reads the same public file).
-   A council member's browser keeps one "Home games this week" bulletin post per week (id homegames-<Monday>), and
-   tools/nightly does the same at 6:00. The text is built the same way in both places so they never fight. If a council
-   member edits the post's text, neither touches it again. */
+/* Game day: on the day of a varsity home game, or an NYSAIS or ACIS final (home or away), one bulletin post
+   (id gameday-<date>, tag Sports) from the school's athletics schedule (the public file behind avenues.org's page).
+   A council member's browser writes it (postGameDay) and tools/nightly does too at 6:00 (gameDay); the text is built
+   identically in both, so change both together. A post council edited or deleted is left alone. */
 const ATHLETICS_URL="https://storage.googleapis.com/avenues-athletics-data/schedule.json";
 const GDAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],GMONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 let gamesTried=false;
-function homeGamesIn(data,from,to){return((data&&data.events)||[]).filter(e=>e.type==="game"&&e.homeAway==="home"&&e.level==="Varsity"&&e.status!=="cancelled"&&!e.hidden&&e.start&&e.start.slice(0,10)>=from&&e.start.slice(0,10)<=to)
-  .sort((a,b)=>a.start.localeCompare(b.start)).map(e=>({date:e.start.slice(0,10),time:e.timeTbd?"":e.start.slice(11,16),team:e.team||"",opp:e.opponent||"",place:[/avenues/i.test(e.venue||"")?"":e.venue||"",e.subsite||""].filter((x,i,a)=>x&&a.indexOf(x)===i).join(", ")}))}
-function gameLine(g){const[y,m,d]=g.date.split("-").map(Number),wd=GDAYS[new Date(y,m-1,d).getDay()];let t="Time TBD";if(g.time){const[h,mi]=g.time.split(":").map(Number);t=((h+11)%12+1)+":"+String(mi).padStart(2,"0")+(h<12?" AM":" PM")}
-  return wd+", "+GMONTHS[m-1]+" "+d+" · "+t+" · "+g.team+(g.opp?" vs "+g.opp:"")+(g.place?" · "+g.place:"")}
-function homeGamesPost(games){return{title:games.length===1?"Home game this week: "+games[0].team+(games[0].opp?" vs "+games[0].opp:""):games.length+" home games this week",
-  body:"Come cheer on the Aviators at home:\n\n"+games.map(gameLine).join("\n")+"\n\nFrom the Aviators athletics schedule. Times can change, so check avenues.org before you go."}}
-async function postHomeGames(){
+const isFinal=e=>/\b(nysais|acis)\b/i.test([e.eventName,e.opponent,e.venue].join(" "))&&/\bfinals?\b|championship/i.test([e.eventName,e.opponent].join(" "));
+function gameDayGames(data,day){return((data&&data.events)||[]).filter(e=>e.type==="game"&&e.status!=="cancelled"&&!e.hidden&&e.start&&e.start.slice(0,10)===day&&((e.homeAway==="home"&&e.level==="Varsity")||isFinal(e)))
+  .sort((a,b)=>a.start.localeCompare(b.start)).map(e=>({date:e.start.slice(0,10),time:e.timeTbd?"":e.start.slice(11,16),team:e.team||"",opp:e.opponent||"",home:e.homeAway==="home",final:isFinal(e),label:e.eventName||"",
+    place:[/avenues/i.test(e.venue||"")?"":e.venue||"",e.subsite||""].filter((x,i,a)=>x&&a.indexOf(x)===i).join(", ")}))}
+function gameTime(t){if(!t)return"time TBD";const[h,mi]=t.split(":").map(Number);return((h+11)%12+1)+":"+String(mi).padStart(2,"0")+(h<12?" AM":" PM")}
+function gameLine(g){return gameTime(g.time)+" · "+(g.final?(g.label||"Final")+": ":"")+g.team+(g.opp?(g.home?" vs ":" at ")+g.opp:"")+(g.place?" · "+g.place:"")}
+function gameDayPost(games){const one=games.length===1?games[0]:null,fin=games.some(g=>g.final);
+  return{title:one?(one.final?"Final today: ":"Home game today: ")+one.team+(one.opp?(one.home?" vs ":" at ")+one.opp:"")+", "+gameTime(one.time):games.length+" big games today",
+    body:(fin?"It's championship day. Come cheer on the Aviators:":"Come cheer on the Aviators at home:")+"\n\n"+games.map(gameLine).join("\n")+"\n\nFrom the Aviators athletics schedule. Times can change, so check avenues.org before you go."}}
+/* Write an auto post unless council has edited it (body no longer matches autoBody) or deleted it (removed). */
+async function autoPost(id,post,extra){const ref=col("bulletin").doc(id),cur=await ref.get(),old=cur.exists?cur.data():null;
+  if(old&&(old.removed||old.body!==old.autoBody))return;
+  if(!post){if(old)await ref.delete();return}
+  if(old&&old.title===post.title&&old.body===post.body)return;
+  await ref.set({...(old||{}),...post,...extra,autoBody:post.body,auto:true,date:(old&&old.date)||extra.date||TODAY,author:(old&&old.author)||"",pinned:!!(old&&old.pinned),at:(old&&old.at)||new Date().toISOString()})}
+async function postAuto(){
   if(gamesTried||!db||!canCouncil()||!canWrite||typeof fetch!=="function")return;gamesTried=true;
-  try{const r=await fetch(ATHLETICS_URL,{cache:"no-cache"});if(!r.ok)return;const data=await r.json();
-    const wk=weekStart(TODAY),ref=col("bulletin").doc("homegames-"+wk),cur=await ref.get(),old=cur.exists?cur.data():null;
-    if(old&&(old.removed||old.body!==old.autoBody))return;
-    const from=(old&&old.from)||TODAY,games=homeGamesIn(data,from,iso(addDays(parse(wk),6)));
-    if(!games.length){if(old)await ref.delete();return}
-    const post=homeGamesPost(games);if(old&&old.title===post.title&&old.body===post.body)return;
-    await ref.set({...(old||{}),...post,autoBody:post.body,games,from,tag:"Sports",date:(old&&old.date)||TODAY,author:(old&&old.author)||"",pinned:!!(old&&old.pinned),auto:true,at:(old&&old.at)||new Date().toISOString()})
-  }catch(e){}
+  try{const r=await fetch(ATHLETICS_URL,{cache:"no-cache"});if(r.ok){const games=gameDayGames(await r.json(),TODAY);await autoPost("gameday-"+TODAY,games.length?gameDayPost(games):null,{games,tag:"Sports"})}
+    await autoPost("homegames-"+weekStart(TODAY),null,{})/* retire the old weekly post (only if nobody edited it) */}catch(e){}
+  try{const m=await lunchWeek();if(m)await autoPost("lunch-"+m.week,lunchPost(m),{menu:m.days,tag:"Lunch",date:m.week<TODAY?TODAY:m.week})}catch(e){}
 }
+/* Lunch: the dining team's weekly Google Slides deck. The "Lower & Upper Division" slide has a table with a column per
+   weekday and rows for entree, vegetarian entree, sides and sandwich. Read from the deck's PowerPoint export. */
+const LUNCH_DECK="1L-yszrkXmhuZqqLgmiJdmaejVDgbAJ2PXV9R1ODau8k";
+async function unzipEntries(buf,want){const v=new DataView(buf),u=new Uint8Array(buf),out={};let e=buf.byteLength-22;while(e>=0&&v.getUint32(e,true)!==0x06054b50)e--;if(e<0)return out;
+  let p=v.getUint32(e+16,true);const n=v.getUint16(e+10,true),dec=new TextDecoder();
+  for(let k=0;k<n;k++){const meth=v.getUint16(p+10,true),size=v.getUint32(p+20,true),nl=v.getUint16(p+28,true),xl=v.getUint16(p+30,true),cl=v.getUint16(p+32,true),off=v.getUint32(p+42,true),name=dec.decode(u.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;
+    if(!want(name))continue;const d=off+30+v.getUint16(off+26,true)+v.getUint16(off+28,true),raw=u.subarray(d,d+size);
+    out[name]=meth===0?dec.decode(raw):await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text()}
+  return out}
+const LUNCH_ROWS=[["veg",/vegetarian|vegan/i],["entree",/entr[eé]e/i],["sides",/side/i],["sandwich",/sandwich/i]];
+async function lunchWeek(){if(typeof DecompressionStream!=="function")return null;
+  const r=await fetch("https://docs.google.com/presentation/d/"+LUNCH_DECK+"/export/pptx");if(!r.ok)return null;
+  const files=await unzipEntries(await r.arrayBuffer(),n=>/^ppt\/slides\/slide\d+\.xml$/.test(n)),A="http://schemas.openxmlformats.org/drawingml/2006/main";
+  for(const xml of Object.values(files)){if(!/Upper Division|LD &amp; UD|LD & UD/i.test(xml))continue;
+    const doc=new DOMParser().parseFromString(xml,"application/xml"),tbl=doc.getElementsByTagNameNS(A,"tbl")[0];if(!tbl)continue;
+    const rows=[...tbl.getElementsByTagNameNS(A,"tr")].map(tr=>[...tr.children].filter(c=>c.localName==="tc").map(tc=>[...tc.getElementsByTagNameNS(A,"p")].map(p=>[...p.getElementsByTagNameNS(A,"t")].map(t=>t.textContent).join("").replace(/\s+/g," ").trim().replace(/,$/,"")).filter(Boolean)));
+    const m=lunchFromRows(rows);if(m)return m}
+  return null}
+function lunchFromRows(rows){const head=rows[0]||[],dates=[],base=parse(TODAY);
+  head.forEach((c,i)=>{const t=c.join(" ").match(/(\d{1,2})\/(\d{1,2})/);if(!t)return;let best=null;for(const y of[base.getFullYear()-1,base.getFullYear(),base.getFullYear()+1]){const d=new Date(y,+t[1]-1,+t[2]);if(!best||Math.abs(d-base)<Math.abs(best-base))best=d}dates.push([i,iso(best)])});
+  if(!dates.length)return null;const week=weekStart(dates[0][1]),gap=(parse(week)-parse(weekStart(TODAY)))/864e5;if(gap<0||gap>7)return null;
+  const days={};for(const[i,d]of dates){const o={};for(const row of rows.slice(1)){const lab=(row[0]||[]).join(" "),k=(LUNCH_ROWS.find(([,re])=>re.test(lab))||[])[0];if(k&&!o[k]&&row[i]&&row[i].length)o[k]=row[i].join(", ")}if(Object.keys(o).length)days[d]=o}
+  return Object.keys(days).length?{week,days}:null}
+function lunchPost(m){const ds=Object.keys(m.days).sort(),first=parse(ds[0]),last=parse(ds[ds.length-1]),f=d=>GMONTHS[d.getMonth()]+" "+d.getDate();
+  return{title:"Lunch this week, "+f(first)+" to "+f(last),body:ds.map(d=>{const o=m.days[d],dd=parse(d);return GDAYS[dd.getDay()]+", "+f(dd)+": "+(o.entree||"See the menu")+(o.veg&&o.veg!==o.entree?"\n  Vegetarian: "+o.veg:"")+(o.sides?"\n  Sides: "+o.sides:"")+(o.sandwich?"\n  Sandwich: "+o.sandwich:"")}).join("\n\n")+"\n\nFrom the dining team's menu. Allergens are listed at each service line."}}
 async function settleGames(){
   if(settling||!db||!canCouncil()||!canWrite||!["games","gamevotes","plays","scores","gamekeys"].every(c=>LEAN?fullData(c):loaded.has(c)))return;
   const due=S.games.filter(g=>g.date<TODAY&&!g.awarded);if(!due.length)return;settling=true;
@@ -2390,7 +2542,7 @@ function subscribeBtns(){const u=calFeed();if(!u)return isPres&&canAct()?`<butto
 
 /* ---------- Explore: events, clubs, opportunities ---------- */
 function exploreTab(){const cur=shownView();
-  return subnav([["events","Events",["calendar"]],["clubs","Clubs"],["opportunities","Opportunities"]])+(cur==="clubs"?clubsView():cur==="opportunities"?oppsView():cur==="calendar"?calendar():eventsView())}
+  return subnav([["events","Events",["calendar"]],["clubs","Clubs"],["opportunities","Opportunities"],["officehours","Office hours"]])+(cur==="clubs"?clubsView():cur==="opportunities"?oppsView():cur==="officehours"?officeView():cur==="calendar"?calendar():eventsView())}
 /* ---------- schedule changes (Today) ---------- */
 function scheduleChanges(){const in30=iso(addDays(new Date(),30)),ago7=iso(addDays(new Date(),-7));
   return[...S.events.filter(e=>e.change&&evVisible(e)&&e.date>=TODAY&&e.date<=in30).map(e=>({title:e.title,text:e.change})),...S.bulletin.filter(p=>p.tag==="Schedule change"&&(p.date||"")>=ago7).map(p=>({title:p.title,text:p.body}))]}
@@ -2591,7 +2743,7 @@ async function saveEditor(){
   else{const ref=col("proposals").doc();ok=await save(()=>ref.set({...data,number:nextNumber(),status:"draft",votes:{},author:me.id||null,created:new Date().toISOString()}),"Proposal saved",["wrote","proposal",data.title]);if(ok)selProposal=ref.id}
   if(ok){editing=null;$("#main").innerHTML="";render()}
 }
-document.addEventListener("input",e=>{if(e.target.id==="helpQ"){want("spaces","all");helpQ=e.target.value;const q=helpQ.trim().toLowerCase(),l=$("#helpList");if(l)l.innerHTML=helpList(S.spaces.filter(d=>d.id!==me.id&&((d.skills||[]).length||(d.activities||[]).length)).filter(d=>!q||[d.name,...(d.skills||[]),...(d.activities||[])].join(" ").toLowerCase().includes(q)));return}if(e.target.id==="oppQ"){oppQ=e.target.value;const l=$("#oppList");if(l)l.innerHTML=oppList();return}if(editing&&e.target.closest&&e.target.closest("#pform")){readEditor();const pv=$("#preview");if(pv)pv.innerHTML=docHTML(editing.d)}});
+document.addEventListener("input",e=>{if(e.target.id==="ohQ"){ohQ=e.target.value;const l=$("#ohList");if(l)l.innerHTML=ohList();return}if(e.target.id==="helpQ"){want("spaces","all");helpQ=e.target.value;const q=helpQ.trim().toLowerCase(),l=$("#helpList");if(l)l.innerHTML=helpList(S.spaces.filter(d=>d.id!==me.id&&((d.skills||[]).length||(d.activities||[]).length)).filter(d=>!q||[d.name,...(d.skills||[]),...(d.activities||[])].join(" ").toLowerCase().includes(q)));return}if(e.target.id==="oppQ"){oppQ=e.target.value;const l=$("#oppList");if(l)l.innerHTML=oppList();return}if(editing&&e.target.closest&&e.target.closest("#pform")){readEditor();const pv=$("#preview");if(pv)pv.innerHTML=docHTML(editing.d)}});
 
 /* attendance */
 function quorum(m){const r=m.records||{},ms=roster(),total=ms.length;let here=0;for(const x of ms)if(r[x.id]==="present"||r[x.id]==="late")here++;return{here,total,met:total>0&&here>total/2,need:Math.floor(total/2)+1}}
@@ -2903,6 +3055,7 @@ document.addEventListener("click",async e=>{
     case"t-accept":{const t=task();return save(()=>setClaim(id,"accepted"),"Task accepted",["accepted","task",t&&t.title])}
     case"t-claim":{const t=task(),to=b.dataset.to;return save(()=>setClaim(id,to),to==="done"?"Nice work":null,[to==="done"?"finished":to==="doing"&&taskState(t).status==="done"?"reopened":"started","task",t&&t.title])}
     case"t-drop":{const t=task();return save(()=>setClaim(id,null),"Task dropped",["dropped","task",t&&t.title])}
+    case"set-day":return openForm({title:"Set today's Day",note:"The site counts school days (Monday to Friday) from here. Set it again after a holiday or break.",fields:[{id:"day",label:"Today is",type:"select",options:[["","Not a school day"],...[1,2,3,4,5,6,7,8,9,10].map(n=>[String(n),"Day "+n])]}],values:{day:String(schoolDay()||"")},submit:v=>save(()=>upsert("scores","_settings",{dayCycle:v.day?{date:TODAY,day:Number(v.day)}:null}),"Saved",["set today's Day","settings",v.day?"Day "+v.day:"none"])});
     case"add-post":return go("post",{date:TODAY,tag:"Announcement",author:amMember()&&myDoc()?me.id:""});
     case"edit-post":return forms.post()(id);
     case"new-proposal":return openEditor(null);
@@ -2927,7 +3080,7 @@ document.addEventListener("click",async e=>{
     case"sample":b.disabled=true;return loadSample();
   }
 });
-document.addEventListener("change",e=>{if(e.target.id==="roomDate"){roomDate=e.target.value||TODAY;render();return}
+document.addEventListener("change",e=>{if(e.target.id==="roomDate"){roomDate=e.target.value||TODAY;render();return}if(e.target.id==="ohDay"){ohDay=e.target.value;const l=$("#ohList");if(l)l.innerHTML=ohList();return}
   if(e.target.id==="rosterOnly"){const on=e.target.checked;save(()=>cfgSet(c=>{c.rosterOnly=on}),on?"Only listed emails can join now":"Anyone who signs in can join now");return}
   if(e.target.id==="sugFilter"){sugFilter=e.target.value;render()}
   if(e.target.dataset&&e.target.dataset.sug){const t=e.target,x=allSuggestions().find(s=>s.key===t.dataset.key);save(()=>db.doc("suggestions/"+t.dataset.sug).update({items:{[t.dataset.key]:{status:t.value,reviewedBy:me.id,reviewedAt:new Date().toISOString()}}}),"Status updated",["marked as "+label(SUG_STATUS,t.value).toLowerCase()+":","suggestion",x&&x.title])}
@@ -2989,7 +3142,7 @@ function want(c,lvl){
   const cur=SUBS[c];if(cur&&LV[cur.lvl]>=LV[lvl])return;
   if(cur&&cur.unsub)try{cur.unsub()}catch(e){}
   loaded.delete(c);SUBS[c]={lvl,unsub:null};
-  const got=docs=>{S[c]=docs;if(c==="scores"){const st=docs.find(d=>d.id==="_stats");if(st)STATS=st}render();if(c==="members")autoApprove();settleGames();writeStats();postHomeGames()};
+  const got=docs=>{S[c]=docs;if(c==="scores"){const st=docs.find(d=>d.id==="_stats");if(st)STATS=st}render();if(c==="members")autoApprove();settleGames();writeStats();postAuto()};
   if(lvl==="self"){
     const ids=c==="scores"?[me.id,"_settings","_stats"]:[me.id],parts={};let n=0;
     const uns=ids.map(id=>db.doc(c+"/"+id).onSnapshot(d=>{if(id==="_stats"){STATS=d.exists?d.data():{}}else parts[id]=d.exists?{id,...d.data()}:null;if(++n>=ids.length||loaded.has(c)){subDone(c,d);got(Object.values(parts).filter(Boolean))}},subFail));
