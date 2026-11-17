@@ -129,14 +129,22 @@
   const db = { doc: docRef, collection: colRef, query };
 
   /* ---------- phone notifications (Firebase Cloud Messaging), delivered by sw.js ---------- */
+  // the messaging library loads only when someone turns notifications on or off
+  const needMessaging = () => firebase.messaging ? Promise.resolve() : new Promise((ok, no) => {
+    const el = document.createElement("script");
+    el.src = "https://www.gstatic.com/firebasejs/" + (window.FIREBASE_VERSION || "10.12.2") + "/firebase-messaging-compat.js";
+    el.onload = () => ok(); el.onerror = () => no({ code: "unsupported" }); document.head.appendChild(el);
+  });
   window.__pushToken = async (vapidKey) => {
-    if (!firebase.messaging || !("serviceWorker" in navigator)) throw { code: "unsupported" };
+    if (!("serviceWorker" in navigator) || !("Notification" in window)) throw { code: "unsupported" };
+    await needMessaging();
+    if (!firebase.messaging) throw { code: "unsupported" };
     const perm = await Notification.requestPermission();
     if (perm !== "granted") throw { code: "denied" };
     const reg = await navigator.serviceWorker.ready;
     return firebase.messaging().getToken({ vapidKey, serviceWorkerRegistration: reg });
   };
-  window.__pushOff = async () => { try { await firebase.messaging().deleteToken(); } catch (e) {} };
+  window.__pushOff = async () => { try { await needMessaging(); await firebase.messaging().deleteToken(); } catch (e) {} };
 
   /* ---------- people ---------- */
   const profCache = {};
