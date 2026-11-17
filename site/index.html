@@ -2942,7 +2942,9 @@ function members(){
 }
 function presPanel(){
   const pend=S.members.filter(d=>!isApproved(d));resolveIds(pend.map(d=>d.id));
+  const nSample=SAMPLE_COLS.reduce((t,c)=>t+S[c].filter(d=>d.sample).length,0);
   return`<section class="panel" style="display:flex;flex-direction:column;gap:14px"><h2>President controls <span class="sub" style="font-weight:500">Only you see this section</span></h2>
+    <div class="toolbar"><button class="btn primary" data-act="add-council">+ Add council member by email</button>${nSample?`<button class="btn ghost danger" data-act="clear-sample">Remove example data (${nSample} items)</button>`:""}</div>
     ${HOSTED?`<div class="banner" style="max-width:none">Anyone can read the bulletin, calendar, events and opportunities. Students sign in with Google to sign up, vote and send suggestions. Approving someone below makes them a council member who can edit.</div>`:`<div class="banner" style="max-width:none">How to share this page: give council members <b>Editor</b> access so they can make changes. Give everyone else at Avenues <b>Viewer</b> access. They see the bulletin, calendar and tasks, and nothing else. People you add as <b>Contributor</b> can also use the suggestion box.</div>`}
     <div class="grid2">
       <div class="field"><label for="emails">Approved member emails</label><textarea id="emails" rows="5" placeholder="one email per line">${esc((ADMIN.emails||[]).join("\n"))}</textarea><span class="sub">People who join with one of these addresses are approved automatically. This list is private to you.</span><div><button class="btn sm primary" data-act="save-emails">Save list</button></div></div>
@@ -2960,7 +2962,9 @@ async function autoApprove(){
   const ps=await U.profiles(pend.map(d=>d.id));Object.assign(PROF,ps);
   const ok=pend.filter(d=>{const e=(ps[d.id]&&ps[d.id].email||"").toLowerCase();return e&&emails.includes(e)});
   if(!ok.length){render();return}
-  if(await save(()=>cfgSet(c=>ok.forEach(d=>c.approved[d.id]=true)),`${ok.length} member${ok.length>1?"s":""} approved from your email list`))ok.forEach(d=>log("approved","member",d.name));
+  const roles={};for(const d of ok){const e=(ps[d.id]&&ps[d.id].email||"").toLowerCase();try{const r=await db.doc("roster/"+e).get(),x=r.exists?r.data():null;if(x&&x.role&&ROLES.includes(x.role))roles[d.id]=x.role}catch(err){}}
+  const roleOf=d=>roles[d.id]||"";
+  if(await save(()=>cfgSet(c=>ok.forEach(d=>{c.approved[d.id]=true;const r=roleOf(d);if(r&&!c.roles[d.id])c.roles[d.id]=r})),`${ok.length} member${ok.length>1?"s":""} approved from your email list`))ok.forEach(d=>log("approved","member",d.name));
 }
 
 /* history */
@@ -3077,6 +3081,8 @@ document.addEventListener("click",async e=>{
     case"join":return joinForm();
     case"edit-profile":return joinForm();
     case"add-member":return memberForm(null);
+    case"add-council":return councilForm();
+    case"clear-sample":return clearSample();
     case"edit-member":return memberForm(id);
     case"approve":{const d=S.members.find(x=>x.id===id);return save(()=>cfgSet(c=>{c.approved[id]=true}),"Member approved",["approved","member",d&&d.name])}
     case"decline":{const d=S.members.find(x=>x.id===id);return save(()=>db.doc("members/"+id).delete(),"Request declined",["declined","member",d&&d.name])}
@@ -3260,6 +3266,20 @@ document.addEventListener("pointerdown",e=>{if(e.target&&e.target.id==="helpQ")w
 document.addEventListener("click",e=>{if(e.target.id==="gallery")closeGallery();if(inboxOpen&&!e.target.closest("#inbox")&&!e.target.closest(".bell")){inboxOpen=false;drawInbox();render()}});
 
 /* ---------- sample council (president only; example data marked sample:true) ---------- */
+const SAMPLE_COLS=["members","events","tasks","bulletin","proposals","meetings"];
+/* Council by email: puts the person on the student list as StuCo (rules and the site then treat them as council as
+   soon as they sign in), adds them to the approved list, and saves their role, applied when their profile is approved. */
+function councilForm(){openForm({title:"Add a council member",submitLabel:"Add",note:"They get council access as soon as they sign in with this Google account. Ask them to sign in and click <b>Create my profile</b> on the Members page so they show up with their role.",
+  fields:[{id:"email",label:"Their Google account email",required:true,full:true,placeholder:"name@gmail.com or name@avenues.org"},{id:"name",label:"Name",required:true},{id:"role",label:"Role",type:"select",options:ROLES.filter(r=>r!=="President").map(r=>[r,r])},{id:"grade",label:"Grade",type:"select",options:[["",""],...GRADES.map(g=>[g,"Grade "+g])]}],values:{role:"Member"},
+  submit:v=>{const email=(v.email||"").trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("#merr").textContent="That doesn't look like an email address.";return false}
+    const emails=[...new Set([...(ADMIN.emails||[]),email])];
+    return save(async()=>{const cur=await db.doc("roster/"+email).get(),row=cur.exists?cur.data()||{}:{};await db.doc("roster/"+email).set({...row,name:v.name||row.name||"",grade:v.grade||row.grade||"",council:true,role:v.role,clubs:row.clubs||[]});await db.doc("admin/access").set({...ADMIN,emails});
+      const m=S.members.find(d=>(PROF[d.id]&&(PROF[d.id].email||"").toLowerCase())===email);if(m)await cfgSet(c=>{c.approved[m.id]=true;c.roles[m.id]=v.role})},
+      `${v.name} added as ${v.role}`,["added to council as "+v.role,"member",v.name])}})}
+async function clearSample(){const items=SAMPLE_COLS.flatMap(c=>S[c].filter(d=>d.sample).map(d=>[c,d.id]));if(!items.length)return;
+  if(!confirm(`Delete ${items.length} example items (sample members, events, tasks, announcements, proposals and meetings)? This can't be undone. Anything you added yourself stays.`))return;
+  const gone=new Set(items.filter(([c])=>c==="members").map(([,id])=>id));
+  return save(async()=>{for(const[c,id]of items)await db.doc(c+"/"+id).delete();if(gone.size)await cfgSet(c=>{for(const id of gone){delete c.roles[id];delete c.approved[id]}})},"Example data removed",["removed the example data","settings",""])}
 async function loadSample(){
   const d=n=>iso(addDays(new Date(),n));
   const ok=await save(async()=>{
