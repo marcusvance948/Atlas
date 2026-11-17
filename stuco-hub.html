@@ -1,7 +1,8 @@
 <title>Avenues Student Hub</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:ital,wght@0,400..900;1,400&display=swap">
 <style>
 /* Hall pass. One bold move: a pennant-gold rail with heavy Franklin Gothic navigation. The work area stays quiet: white ground, navy ink, sections marked by a thick ink rule, cards only for real objects. Everything left-aligned. */
 :root{
@@ -114,6 +115,22 @@ main{padding:0;min-width:0}
 .cal .num{font-size:15px;font-weight:700}
 .cal .day.today .num{background:var(--rail);color:var(--rail-ink);border-radius:3px;padding:0 6px;align-self:flex-start}
 .cal .ev{font-size:12px;font-weight:600;padding:1px 5px;border-radius:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;border:0}
+.cal .day[aria-pressed="true"]{background:var(--surface);box-shadow:inset 0 0 0 2px var(--rule-strong)}
+.cal .ev.plan{color:var(--ink);padding-left:1px}
+.cal .ev.plan.done{color:var(--muted);text-decoration:line-through}
+.cal .ev.more{color:var(--muted);padding-left:1px}
+.plans li{align-items:flex-start}
+.plans input[type=checkbox]{width:22px;height:22px;margin:1px 0 0;flex:none;accent-color:var(--good);cursor:pointer}
+.plans .title{font-size:17px;font-weight:700;cursor:pointer;display:block}
+.plans li.done .title{text-decoration:line-through;color:var(--muted)}
+.plan-late{color:var(--bad);font-weight:700}
+.plan-notes{margin-top:4px;font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere}
+.plan-evs{margin:12px 0 0}
+.flabel{font-size:15px;font-weight:700}
+.people{display:flex;flex-wrap:wrap;gap:8px}
+.pchk{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1.5px solid var(--rule);border-radius:3px;cursor:pointer;font-size:15px;font-weight:600;min-height:40px}
+.pchk:has(input:checked){border-color:var(--rule-strong);background:var(--warn-soft)}
+.pchk input{width:18px;height:18px;margin:0;accent-color:var(--ink)}
 .cal .ev.task{background:transparent;color:var(--muted);font-weight:500;padding-left:1px}
 .legend{display:flex;flex-wrap:wrap;gap:6px}
 
@@ -478,8 +495,8 @@ body.is-home .wrap{max-width:none;padding:0;gap:0}
 .hbtn.glass:hover{--pb:#FFF3CC}
 .home :focus-visible,.band :focus-visible,.home-strip :focus-visible{outline:3px solid #FFFFFF;outline-offset:4px}
 .home-copy{padding:clamp(36px,9vh,110px) max(24px,env(safe-area-inset-right,0px)) 0 max(24px,env(safe-area-inset-left,0px));max-width:680px}
-.home-copy h1{font-size:clamp(38px,5.4vw,70px);font-weight:800;letter-spacing:-.035em;line-height:1;color:#FFFFFF;text-shadow:0 3px 0 rgba(14,26,48,.28)}
-.home-copy p{margin:18px 0 0;font-size:clamp(17px,1.5vw,20px);line-height:1.5;max-width:40ch;color:#FFFFFF;text-shadow:0 1px 0 rgba(14,26,48,.35)}
+.home-copy h1{font-size:clamp(38px,5.4vw,70px);font-weight:800;letter-spacing:-.035em;line-height:1;color:#FFFFFF;text-shadow:0 3px 0 rgba(14,26,48,.7)}
+.home-copy p{margin:18px 0 0;font-size:clamp(17px,1.5vw,20px);line-height:1.5;max-width:40ch;color:#FFFFFF;text-shadow:0 2px 0 rgba(14,26,48,.9),2px 0 0 rgba(14,26,48,.6),-1px 0 0 rgba(14,26,48,.6)}
 .home-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
 .home-strip{background:#14202E}
 .home-live{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;padding-block:24px 28px;padding-left:max(27px,env(safe-area-inset-left,0px));padding-right:max(27px,env(safe-area-inset-right,0px));max-width:1220px}
@@ -498,7 +515,7 @@ a.live-card:hover{--pb:#FFF3CC}
 .home-foot{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;padding-block:18px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));font-size:14px;color:var(--muted);border-top:1px solid var(--rule)}
 .home-foot a{color:var(--ink);font-weight:600}
 a.brand{color:inherit;text-decoration:none}
-@media (max-width:700px){.home-live{grid-template-columns:minmax(0,1fr)}.home canvas{object-position:80% 100%}.home-shade{background:linear-gradient(180deg,rgba(14,26,48,.5) 0%,rgba(14,26,48,.2) 50%,rgba(14,26,48,0) 72%)}}
+@media (max-width:700px){.home-live{grid-template-columns:minmax(0,1fr)}.home canvas{object-position:80% 100%}.home-shade{background:linear-gradient(180deg,rgba(14,26,48,.5) 0%,rgba(14,26,48,.34) 60%,rgba(14,26,48,.12) 100%)}}
 
 /* inner pages continue the home page: the same street in a shorter banner, the same menu, titles in white */
 body.is-site .rail{display:none}
@@ -896,9 +913,9 @@ a.fchip{text-decoration:none;display:inline-block}
 
 @media (max-width:1000px){.edgrid{grid-template-columns:minmax(0,1fr)}.sticky{position:static}}
 @media (max-width:860px){
-  .app{grid-template-columns:1fr}
+  .app{grid-template-columns:minmax(0,1fr)}
   body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--rail)}
-  .rail{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;height:auto;overflow:visible;gap:10px;padding:14px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+  .rail{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;height:auto;overflow:visible;min-width:0;gap:10px;padding:14px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
   .rail .top-row{flex-direction:row;justify-content:space-between;gap:10px;align-items:center}
   .brand b{font-size:24px} .brand small{display:none}
   .me{border-top:0;padding-top:0}
@@ -907,12 +924,15 @@ a.fchip{text-decoration:none;display:inline-block}
   nav a{font-size:16px}
   .status{display:none}
   main{padding-top:28px}
+  body.is-home main,body.is-site main{padding-top:0}
   .grid2,.posts,.split,.start{grid-template-columns:minmax(0,1fr)}
   .start .acts{justify-content:flex-start}
   .board{grid-template-columns:minmax(0,1fr)}
   .cal .day{min-height:58px}
   .cal .ev{font-size:0;height:6px;padding:0;border-radius:99px}
-  .cal .ev.task{display:none}
+  .cal .ev.task,.cal .ev.more{display:none}
+  .cal .ev.plan{background:var(--ink)}
+  .cal .ev.plan.done{background:var(--rule)}
   .head h1{font-size:36px}
   .paper{padding:30px 22px}
   .paper .dtitle{font-size:27px}
@@ -1005,22 +1025,20 @@ a.fchip{text-decoration:none;display:inline-block}
 <div id="gallery" hidden></div>
 <div id="toast" hidden role="status"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 const STUDENT_NAV=[["home","Today","home"],["explore","Explore","events"],["play","Play","play"],["stuco","StuCo","stuco"]];
-const COUNCIL_NAV=[["overview","Overview"],["tasks","Tasks"],["proposals","Proposals"],["attendance","Attendance"],["members","Members"],["history","History"]];
-const ROUTES={home:"home",bulletin:"home",events:"explore",calendar:"explore",clubs:"explore",club:"explore",opportunities:"explore",officehours:"explore",play:"play",stuco:"stuco",suggestions:"stuco",lost:"stuco",voice:"stuco",working:"stuco",myspace:"me",overview:"overview",tasks:"tasks",proposals:"proposals",attendance:"attendance",members:"members",history:"history"};
+const COUNCIL_NAV=[["overview","Overview"],["planner","Calendar"],["tasks","Tasks"],["proposals","Proposals"],["attendance","Attendance"],["members","Members"],["history","History"]];
+const ROUTES={home:"home",bulletin:"home",events:"explore",calendar:"explore",clubs:"explore",club:"explore",opportunities:"explore",officehours:"explore",play:"play",stuco:"stuco",suggestions:"stuco",lost:"stuco",voice:"stuco",working:"stuco",myspace:"me",overview:"overview",planner:"planner",tasks:"tasks",proposals:"proposals",attendance:"attendance",members:"members",history:"history"};
 const STUDENT_ROUTES=["home","bulletin","events","calendar","clubs","club","opportunities","officehours","play","stuco","suggestions","lost","voice","working","myspace"];
 /* old links keep working: each old page name points at where that content lives now */
 const ALIAS={hub:["home"],community:["home"],create:["home"],collabs:["home"],life:["home","sec-photos"],connect:["clubs"],explore:["events"],challenges:["play","sec-game"],dares:["play","sec-challenges"],leaderboard:["play","sec-leaderboard"]};
 let pendingScroll=null;
-const COLS=["members","events","tasks","claims","bulletin","suggestions","albums","stories","opps","polls","votes","signups","birthdays","playlists","aviators","predictions","picks","scores","clubs","clubposts","clubdrafts","posts","submissions","replies","challenges","done","lostfound","wins","years","spaces","mine","bookings","games","gamevotes","plays","gamekeys","roster","proposals","meetings","history"];
-const COUNCIL_ONLY=["proposals","meetings","history","roster","gamekeys"];
+const COLS=["members","events","tasks","claims","bulletin","suggestions","albums","stories","opps","polls","votes","signups","birthdays","playlists","aviators","predictions","picks","scores","clubs","clubposts","clubdrafts","posts","submissions","replies","challenges","done","lostfound","wins","years","spaces","mine","bookings","games","gamevotes","plays","gamekeys","roster","proposals","meetings","plans","history"];
+const COUNCIL_ONLY=["proposals","meetings","history","roster","gamekeys","plans"];
 const SCHOOL="Avenues The World School";
 const SUG_CATS=["Events","Spirit","Vending machine","Facilities","Food","Clubs","School policy","Report a problem","Other"];
 const SUG_STATUS=[["new","New"],["review","Under review"],["planned","Planned"],["done","Done"],["declined","Not this time"]];
-const S={members:[],events:[],tasks:[],claims:[],bulletin:[],suggestions:[],albums:[],stories:[],opps:[],polls:[],votes:[],signups:[],birthdays:[],playlists:[],aviators:[],predictions:[],picks:[],scores:[],clubs:[],clubposts:[],clubdrafts:[],posts:[],submissions:[],replies:[],challenges:[],done:[],lostfound:[],wins:[],years:[],spaces:[],mine:[],bookings:[],games:[],gamevotes:[],plays:[],gamekeys:[],roster:[],proposals:[],meetings:[],history:[]};
+const S={plans:[],members:[],events:[],tasks:[],claims:[],bulletin:[],suggestions:[],albums:[],stories:[],opps:[],polls:[],votes:[],signups:[],birthdays:[],playlists:[],aviators:[],predictions:[],picks:[],scores:[],clubs:[],clubposts:[],clubdrafts:[],posts:[],submissions:[],replies:[],challenges:[],done:[],lostfound:[],wins:[],years:[],spaces:[],mine:[],bookings:[],games:[],gamevotes:[],plays:[],gamekeys:[],roster:[],proposals:[],meetings:[],history:[]};
 let CFG={approved:{},roles:{},school:"",president:null}, cfgExists=false, ADMIN={emails:[]}, adminExists=false;
 const EV_TYPES=[["meeting","StuCo meeting"],["event","School event"],["dance","Dance"],["trip","Trip"],["competition","Competition or tournament"],["fundraiser","Fundraiser"],["deadline","Deadline"],["assessment","Assessment"]];
 const TASK_STATUS=[["todo","To do"],["doing","In progress"],["done","Done"]];
@@ -1133,7 +1151,7 @@ function setStatus(s){
 
 /* ---------- render ---------- */
 function renderNav(){
-  const counts={tasks:S.tasks.filter(t=>taskState(t).status!=="done").length,proposals:S.proposals.filter(p=>p.status==="voting").length,members:isPres?S.members.filter(d=>!isApproved(d)).length:0,home:council()?pendSubs(FEED_KINDS).length:0,explore:council()?allDrafts().filter(d=>d.status==="pending").length:0,stuco:council()?allSuggestions().filter(x=>x.status==="new").length:0,play:council()?waitingClaims():0};
+  const counts={planner:S.plans.filter(p=>!p.done&&planMine(p)&&p.date<=iso(addDays(new Date(),1))).length,tasks:S.tasks.filter(t=>taskState(t).status!=="done").length,proposals:S.proposals.filter(p=>p.status==="voting").length,members:isPres?S.members.filter(d=>!isApproved(d)).length:0,home:council()?pendSubs(FEED_KINDS).length:0,explore:council()?allDrafts().filter(d=>d.status==="pending").length:0,stuco:council()?allSuggestions().filter(x=>x.status==="new").length:0,play:council()?waitingClaims():0};
   const sec=ROUTES[shownView()];
   const link=([k,l,href])=>`<a href="#${href||k}" ${k===sec?'aria-current="page"':""}>${l}${counts[k]?`<span class="count">${counts[k]}</span>`:""}</a>`;
   let h=council()?`<div class="navgroup">School site</div>${STUDENT_NAV.map(link).join("")}<div class="navgroup">Council</div>${COUNCIL_NAV.map(link).join("")}`:STUDENT_NAV.map(link).join("");
@@ -1171,7 +1189,7 @@ function render(){
     else if(d&&isApproved(d)&&!isEditor)banner=`<div class="banner">You're an approved council member. Ask the president to give you Editor access to this page so you can make changes.</div>`;}
   if(preview&&canCouncil())banner=`<div class="banner preview"><span>You're seeing the site the way students see it.</span><button class="btn sm" data-act="mode" data-to="council">Back to council view</button></div>`+banner;
   if(lockedOut())banner+=`<div class="banner">You're signed in as ${esc(me.email||"an account")}, which isn't on the Avenues student list. Sign in with your school email, or ask Student Council to add you.</div>`;
-  const VIEWFN={bulletin,events:exploreTab,calendar:exploreTab,clubs:exploreTab,club:exploreTab,opportunities:exploreTab,officehours:exploreTab,play:playPage,stuco:stucoPage,suggestions:stucoPage,lost:stucoPage,voice:stucoPage,working:stucoPage,myspace:mySpaceView,overview,tasks:()=>tasks(),proposals,attendance,members,history:historyView};
+  const VIEWFN={planner,bulletin,events:exploreTab,calendar:exploreTab,clubs:exploreTab,club:exploreTab,opportunities:exploreTab,officehours:exploreTab,play:playPage,stuco:stucoPage,suggestions:stucoPage,lost:stucoPage,voice:stucoPage,working:stucoPage,myspace:mySpaceView,overview,tasks:()=>tasks(),proposals,attendance,members,history:historyView};
   if(!council()&&shownView()!=="bulletin")banner=alertBar()+banner;
   $("#main").innerHTML=banner+VIEWFN[shownView()]();
   $("#bandH1").innerHTML=pageHead.title||"";const bc=$("#bandCtx");bc.innerHTML=pageHead.context||"";bc.hidden=!pageHead.context;
@@ -1669,8 +1687,8 @@ function resizeToBlob(file,max){return new Promise((res,rej)=>{const url=URL.cre
 /* ---------- home page: a pixel scene of the Avenues building ----------
    The building is drawn in corner perspective (two receding faces) so it reads as 3D,
    against a flat 2D sky, skyline and street. Kept sparse on purpose. */
-const SW=480,SH=270,GY=214,HY=GY-10,CORNER=356,TOPC=14;
-let sceneRAF=0,sceneCanvas=null;
+const SW=480,SH=270,GY=204,HY=GY-10,CORNER=356,TOPC=14;
+let sceneRAF=0,sceneCanvas=null,sceneIO=null;
 function seeded(n){let s=n>>>0;return()=>(s=(s*1664525+1013904223)>>>0)/4294967296}
 let sceneOverride=null;
 function sceneSeason(){if(sceneOverride&&sceneOverride.season)return sceneOverride.season;const m=new Date().getMonth();return m<2||m===11?"winter":m<5?"spring":m<8?"summer":"fall"}
@@ -1711,9 +1729,9 @@ function faceTex(night,shade,sign){
       if(!on){box(g,wx,wy,2,1,glint);box(g,wx,wy+1,1,1,glint)}
       box(g,wx+3,wy,1,10,sand);box(g,wx,wy+5,7,1,sand);box(g,wx-1,wy+10,9,1,lo)}}
   for(let col=0;col<13;col+=2)box(g,col*12,6,2,158,hi);
-  box(g,0,164,W,2,lo);box(g,0,166,W,30,night?(shade?"#3D362B":"#51473A"):(shade?"#BBA576":"#DCCB9F"));
+  box(g,0,164,W,2,lo);box(g,0,166,W,30,night?(shade?"#3D362B":"#51473A"):(shade?"#BBA576":"#DCCB9F"));box(g,0,166,W,4,night?"#15191C":"#2B3238");box(g,0,170,W,1,night?"#0C0E10":"#191D20");
   for(let k=0;k<6;k++)box(g,6+k*25,172,19,22,night?(sign?"#C9A859":"#2A3A46"):(shade?"#4A6878":"#63889A"));
-  if(sign){box(g,6,165,64,8,"#2B3238");box(g,6,173,64,1,"#191D20");pixelText(g,"AVENUES",24,167,"#FFFFFF");box(g,30,176,17,20,night?"#F6D57A":"#232C31")}
+  if(sign){box(g,6,165,64,8,"#2B3238");box(g,6,173,64,1,"#191D20");box(g,30,176,17,20,night?"#F6D57A":"#232C31")}
   return c;
 }
 function drawFace(g,tex,xNear,xFar,k){
@@ -1722,37 +1740,68 @@ function drawFace(g,tex,xNear,xFar,k){
     const top=Math.round(HY+(TOPC-HY)*w),bot=Math.round(HY+(GY-HY)*w);
     g.drawImage(tex,sx,0,1,tex.height,xNear+dir*i-(dir<0?1:0),top,1,bot-top)}
 }
+function drawTree(g,r,cx,base,rad,season,night){
+  const[dk,md,lt]=season==="winter"?["#DDE6EE","#F4F8FB","#FFFFFF"]:season==="fall"?(night?["#5A2C0E","#7A3D12","#96561A"]:["#9A4A14","#D2691E","#F0A030"]):season==="spring"?(night?["#7A4760","#96607A","#B07C94"]:["#D97BA6","#F2A7C3","#FBD3E0"]):night?["#132A18","#1B3B22","#26502D"]:["#2E6A39","#3F8A45","#6DB356"];
+  box(g,cx-3,base+3,7,2,night?"#2B2823":"#6B5B48");box(g,cx-1,base-rad-1,3,rad+5,night?"#2A2018":"#5B4330");
+  for(let y=-rad;y<=rad;y++)for(let x=-rad;x<=rad;x++){const d=x*x+y*y*1.3;if(d<rad*rad&&r()>(season==="winter"?.72:.05))box(g,cx+x,base-rad*2+y,1,1,d<rad*rad*.35&&y<0&&x<0?lt:(r()>.5?md:dk))}
+}
+/* The street is the corner of 10th Avenue and West 25th Street: the avenue runs across the front
+   (bike lane, parking lane, two lanes of one-way traffic), the side street runs back past the High Line. */
+const LANES=[GY+48,GY+64],PARK_Y=GY+32,STOP_X=120,XW=[128,230],SIDE=[150,226];
 function drawBackdrop(g,night,season){
-  const r=seeded(11);
+  const r=seeded(11),white=night?"#8C8C80":"#E8E6DA",inX=x=>x>=STOP_X-2&&x<XW[1]+22;
   // flat 2D skyline
   const haze=night?"#1A2743":"#9DBBD6",haze2=night?"#162038":"#8AADCB",hwin=night?"#3B4C70":"#BBD2E4";
   for(let x=-4;x<SW;){const w=9+Math.floor(r()*16),h=14+Math.floor(r()*44),c=r()>.5?haze:haze2;box(g,x,HY-h,w,h,c);
     for(let yy=HY-h+4;yy<HY-5;yy+=5)for(let xx=x+2;xx<x+w-2;xx+=3)if(r()>.45)box(g,xx,yy,1,2,night&&r()>.6?"#E8C873":hwin);
     x+=w+Math.floor(r()*4)}
   box(g,92,HY-92,11,92,haze);box(g,95,HY-104,5,12,haze);box(g,97,HY-116,1,12,haze);
+  // down West 25th Street: brick and white buildings, then the High Line crossing over the street
   box(g,170,HY-66,36,66,night?"#3E2623":"#A9604A");for(let yy=HY-60;yy<HY-6;yy+=8)for(let xx=174;xx<202;xx+=6)box(g,xx,yy,3,4,night?(r()>.6?"#E8C873":"#241513"):"#5E3A31");
   box(g,204,HY-92,38,92,night?"#333843":"#E4E7EA");for(let yy=HY-84;yy<HY-8;yy+=9)for(let xx=208;xx<238;xx+=7)box(g,xx,yy,4,5,night?(r()>.6?"#E8C873":"#1B1F27"):"#8FA2B0");
-  // ground, then the building's two faces meeting at the near corner
+  const steel=night?"#1B2023":"#30373B",rivet=night?"#2A3135":"#4A545A",leaf=season==="winter"?["#DDE6EE","#F4F8FB"]:season==="fall"?["#B8742A","#7E8A3A"]:night?["#1B3B22","#26502D"]:["#3F8A45","#6DB356"];
+  box(g,126,HY-25,114,1,rivet);box(g,126,HY-24,114,7,steel);box(g,126,HY-18,114,1,night?"#0F1214":"#1E2326");
+  for(let x=128;x<238;x+=6)box(g,x,HY-22,1,3,rivet);
+  [152,216].forEach(x=>{box(g,x,HY-17,3,17,steel);box(g,x-1,HY-17,5,1,rivet)});
+  for(let x=128;x<238;x+=2+Math.floor(r()*3)){const h=1+Math.floor(r()*4);box(g,x,HY-25-h,2,h,leaf[Math.floor(r()*2)])}
+  // the dark glass building across 25th Street
+  const fr=night?"#161C20":"#2C363C",gl=night?"#1B292E":"#55838A",gl2=night?"#182428":"#476F76",gh=night?"#22343A":"#8DB7BC";
+  box(g,28,HY-118,100,118,fr);box(g,28,HY-118,100,2,night?"#222B30":"#3F4B52");box(g,122,HY-116,6,116,night?"#101518":"#222A2F");
+  for(let row=0;row<9;row++)for(let c=0;c<9;c++){const x=31+c*10,y=HY-113+row*11,on=night&&r()>.8;box(g,x,y,8,8,on?"#E8C873":(row+c)%3?gl:gl2);if(!on)box(g,x,y,3,1,gh)}
+  box(g,28,HY-14,100,14,night?"#101518":"#222A2F");for(let c=0;c<5;c++)box(g,32+c*19,HY-11,15,11,night?"#C9A859":"#3D5A63");
+  // sidewalk, then the school's two faces meeting at the near corner
   box(g,0,HY,SW,GY+8-HY,season==="winter"?(night?"#77818C":"#E6EBEF"):night?"#4E4B47":"#C3BDB1");
   drawFace(g,faceTex(night,true,false),CORNER,238,.58);
   drawFace(g,faceTex(night,false,true),CORNER,476,.6);
   box(g,CORNER,TOPC,1,GY-TOPC,night?"#8A795E":"#FBF0D2");
+  pixelText(g,"AVEN",370,GY-29,"#FFFFFF");pixelText(g,"UES",386,GY-28,"#FFFFFF");
   box(g,300,35,1,17,"#9AA3AB");for(let k=0;k<5;k++)box(g,301,35+k,10,1,k%2?"#FFFFFF":"#C8373B");box(g,301,35,4,3,"#2D3F7A");
-  // lamp post with a navy banner, one street tree
-  box(g,226,GY-58,2,60,"#5D6670");box(g,222,GY-60,8,2,"#5D6670");box(g,223,GY-58,4,2,night?"#FFE9A0":"#D9DEE2");box(g,228,GY-50,6,12,"#1F2E5A");box(g,230,GY-46,2,4,"#FFFFFF");
-  if(night){g.fillStyle="rgba(255,226,140,.16)";g.fillRect(214,GY-58,22,60)}
-  const[dk,md,lt]=season==="winter"?["#DDE6EE","#F4F8FB","#FFFFFF"]:season==="fall"?(night?["#5A2C0E","#7A3D12","#96561A"]:["#9A4A14","#D2691E","#F0A030"]):season==="spring"?(night?["#7A4760","#96607A","#B07C94"]:["#D97BA6","#F2A7C3","#FBD3E0"]):night?["#132A18","#1B3B22","#26502D"]:["#2E6A39","#3F8A45","#6DB356"];
-  box(g,141,GY-14,3,18,night?"#2A2018":"#5B4330");
-  for(let y=-13;y<=13;y++)for(let x=-13;x<=13;x++){const d=x*x+y*y*1.3;if(d<169&&r()>(season==="winter"?.72:.05))box(g,142+x,GY-26+y,1,1,d<60&&y<0&&x<0?lt:(r()>.5?md:dk))}
-  // sidewalk seams, curb, bike lane, street, crosswalk
+  // sidewalk seams and curb
+  const road=night?"#24272C":"#4A4F57",grit=night?"#2B2F35":"#545A62";
   for(let x=0;x<SW;x+=16)box(g,x,GY,1,8,night?"#45423E":"#B0AA9D");
-  box(g,0,GY+8,SW,2,night?"#3A3835":"#8C877E");box(g,0,GY+10,SW,SH-GY-10,night?"#24272C":"#4A4F57");
-  for(let k=0;k<420;k++)box(g,Math.floor(r()*SW),GY+10+Math.floor(r()*(SH-GY-10)),1,1,night?"#2B2F35":"#545A62");
-  box(g,0,GY+11,SW,7,night?"#25402F":"#4E8E62");for(let x=14;x<SW;x+=150){box(g,x,GY+13,2,2,"#E9F1EA");box(g,x+5,GY+13,2,2,"#E9F1EA");box(g,x+2,GY+12,3,1,"#E9F1EA")}
-  for(let x=0;x<SW;x+=16)box(g,x,GY+38,8,1,night?"#8C8C80":"#E8E3C8");
-  for(let x=24;x<118;x+=10)box(g,x,GY+21,6,SH-GY-23,night?"#6D6E70":"#E6E6E6");
-  // school buses waiting at the curb
-  drawVehicle(g,{kind:"bus",x:382,y:GY+34,d:-1,L:44},night);drawVehicle(g,{kind:"bus",x:430,y:GY+34,d:-1,L:44},night);
+  box(g,0,GY+8,SW,2,night?"#3A3835":"#8C877E");
+  // West 25th Street running back from the avenue, with its crosswalk
+  for(let y=HY;y<GY+10;y++){const t=(y-HY)/(GY+10-HY),xl=Math.round(SIDE[0]+14*(1-t)),xr=Math.round(SIDE[1]-14*(1-t));box(g,xl,y,xr-xl,1,road)}
+  for(let x=SIDE[0]+4;x<SIDE[1]-3;x+=6)box(g,x,GY+1,3,7,white);
+  // 10th Avenue
+  box(g,0,GY+10,SW,SH-GY-10,road);
+  for(let k=0;k<420;k++)box(g,Math.floor(r()*SW),GY+10+Math.floor(r()*(SH-GY-10)),1,1,grit);
+  for(let x=0;x<SW;x++)if(!inX(x)){box(g,x,GY+11,1,7,night?"#25402F":"#4E8E62");box(g,x,GY+19,1,1,white)}
+  for(const x of[40,290,420]){box(g,x,GY+13,2,2,"#E9F1EA");box(g,x+5,GY+13,2,2,"#E9F1EA");box(g,x+2,GY+12,3,1,"#E9F1EA")}
+  for(const y of[GY+35,GY+51])for(let x=0;x<SW;x+=16)if(!inX(x)&&!inX(x+8))box(g,x,y,8,1,white);
+  box(g,STOP_X,GY+20,2,SH-GY-20,white);
+  for(const x of XW)for(let y=GY+12;y<SH;y+=4)box(g,x,y,20,2,white);
+  // sidewalk: trees, lamp post with a navy banner, hydrant, bus stop, signal poles and street signs
+  drawTree(g,r,58,GY,13,season,night);drawTree(g,r,296,GY,8,season,night);drawTree(g,r,452,GY,8,season,night);
+  const pole="#5D6670";
+  box(g,110,GY-58,2,60,pole);box(g,106,GY-60,8,2,pole);box(g,107,GY-58,4,2,night?"#FFE9A0":"#D9DEE2");box(g,112,GY-50,6,12,"#1F2E5A");box(g,114,GY-46,2,4,"#FFFFFF");
+  if(night){g.fillStyle="rgba(255,226,140,.16)";g.fillRect(98,GY-58,22,60)}
+  box(g,95,GY+2,3,5,"#C8373B");box(g,94,GY+4,5,1,"#C8373B");box(g,95,GY+1,3,1,"#E2625F");
+  box(g,266,GY-16,1,22,pole);box(g,264,GY-21,5,5,"#2446C7");box(g,266,GY-19,1,2,"#FFFFFF");
+  box(g,146,GY-22,2,26,pole);box(g,233,GY-46,2,50,pole);box(g,228,GY-46,5,13,"#1E2226");
+  box(g,236,GY-45,31,7,"#1D6B45");pixelText(g,"W 25 ST",238,GY-44,"#FFFFFF");box(g,236,GY-37,23,7,"#1D6B45");pixelText(g,"10 AV",238,GY-36,"#FFFFFF");
+  // parked at the curb: cars and cabs on the far block, school buses outside the school
+  [{kind:"car",x:4,L:22,color:"#3A5A8C"},{kind:"taxi",x:32,L:22},{kind:"car",x:62,L:22,color:"#F4F4F2"},{kind:"car",x:90,L:22,color:"#7A2E2E"},{kind:"bus",x:274,L:44},{kind:"bus",x:324,L:44},{kind:"car",x:378,L:22,color:"#2B2F36"},{kind:"taxi",x:410,L:22},{kind:"car",x:446,L:22,color:"#8C9399"}].forEach(v=>drawVehicle(g,{...v,y:PARK_Y,d:1},night));
 }
 const SKIN=["#F1C9A5","#E0AC7E","#C68B59","#8D5A35","#5E3B22"],SHIRT=["#F4B400","#2446C7","#C8373B","#1D7A45","#FFFFFF","#14202E","#8A4FBF","#F08A24"];
 function drawVehicle(g,v,night){
@@ -1775,38 +1824,55 @@ function drawPed(g,p){const f=Math.floor(p.dist/2.5)%2,x=Math.round(p.x),y=p.y;
 
 function startScene(canvas){
   stopScene();if(!canvas)return;sceneCanvas=canvas;
-  const phase=scenePhase(),season=sceneSeason(),night=phase==="night",r=Math.random;canvas.width=SW;canvas.height=SH;
-  const g=canvas.getContext("2d");g.imageSmoothingEnabled=false;
+  const phase=scenePhase(),season=sceneSeason(),night=phase==="night",r=Math.random,pick=a=>a[Math.floor(r()*a.length)];canvas.width=SW;canvas.height=SH;
+  const g=canvas.getContext("2d",{alpha:false});g.imageSmoothingEnabled=false;
   const[sky,sg]=makeCanvas(SW,SH);drawSky(sg,phase);
   const[city,cg]=makeCanvas(SW,SH);drawBackdrop(cg,night,season);if(phase==="dawn"||phase==="dusk"){cg.fillStyle="rgba(255,120,60,.13)";cg.fillRect(0,0,SW,SH)}
   const clouds=[[200,60,3,-20,4,26],[150,44,9,190,2.5,58],[110,30,5,330,5,8]].map(([w,h,s,x,sp,y])=>({img:makeCloud(w,h,s,night),x,y,sp}));
-  const lane={y:GY+54,d:-1,list:[]},bikes=[],peds=[],birds=[];
-  const newVehicle=x=>{const k=r(),kind=k<.2?"bus":k<.62?"taxi":"car";return{kind,L:kind==="bus"?44:22,d:lane.d,y:lane.y,x,v:(kind==="bus"?16:22)+r()*8,color:["#2B2F36","#8C9399","#F4F4F2","#3A5A8C","#7A2E2E"][Math.floor(r()*5)]}};
-  const newBike=x=>({x,y:GY+18,d:r()>.5?1:-1,v:11+r()*5,dist:0,shirt:SHIRT[Math.floor(r()*SHIRT.length)],skin:SKIN[Math.floor(r()*SKIN.length)],helmet:["#1F1F1F","#F4B400","#2446C7"][Math.floor(r()*3)],pants:"#2B2F36",frame:["#C8373B","#2446C7","#1D7A45","#1B1B1B"][Math.floor(r()*4)]});
-  const newPed=x=>({x,y:GY+7-Math.floor(r()*3),d:r()>.5?1:-1,v:4+r()*4,dist:0,skin:SKIN[Math.floor(r()*SKIN.length)],hair:["#1B1410","#3B2416","#7A4B26","#D8B26A"][Math.floor(r()*4)],shirt:SHIRT[Math.floor(r()*SHIRT.length)],pants:["#22303F","#2B2F36","#5A6470","#7A5C3A"][Math.floor(r()*4)],bag:r()>.4?["#C8373B","#2446C7","#F4B400","#14202E"][Math.floor(r()*4)]:null});
-  lane.list.push(newVehicle(120),newVehicle(330));bikes.push(newBike(r()*SW));
+  const lanes=LANES.map(y=>({y,list:[]})),bikes=[],peds=[],birds=[],cross=[];
+  const newVehicle=(lane,x)=>{const k=r(),kind=k<.15?"bus":k<.6?"taxi":"car",L=kind==="bus"?44:22,v0=(kind==="bus"?18:24)+r()*8;return{kind,L,d:1,y:lane.y,x:x==null?-L:x,v0,s:v0,color:pick(["#2B2F36","#8C9399","#F4F4F2","#3A5A8C","#7A2E2E"])}};
+  const newBike=x=>{const v0=12+r()*5;return{x,L:10,y:GY+18,d:1,v0,s:v0,dist:0,shirt:pick(SHIRT),skin:pick(SKIN),helmet:pick(["#1F1F1F","#F4B400","#2446C7"]),pants:"#2B2F36",frame:pick(["#C8373B","#2446C7","#1D7A45","#1B1B1B"])}};
+  const newPed=x=>({x,y:GY+7-Math.floor(r()*3),d:r()>.5?1:-1,v:4+r()*4,dist:0,skin:pick(SKIN),hair:pick(["#1B1410","#3B2416","#7A4B26","#D8B26A"]),shirt:pick(SHIRT),pants:pick(["#22303F","#2B2F36","#5A6470","#7A5C3A"]),bag:r()>.4?pick(["#C8373B","#2446C7","#F4B400","#14202E"]):null});
+  lanes[0].list.push(newVehicle(lanes[0],300),newVehicle(lanes[0],60));lanes[1].list.push(newVehicle(lanes[1],380),newVehicle(lanes[1],170));bikes.push(newBike(r()*SW));
   for(let k=0;k<7;k++)peds.push(newPed(r()*SW));
-  let clock=2;const plane={x:-20,wait:3};
-  const parts=season==="summer"?[]:Array.from({length:season==="winter"?46:20},()=>({x:r()*SW,y:r()*GY,v:(season==="winter"?9:6)+r()*8,ph:r()*6,c:season==="winter"?"#FFFFFF":season==="fall"?["#D2691E","#F0A030","#9A4A14"][Math.floor(r()*3)]:["#F2A7C3","#FBD3E0"][Math.floor(r()*2)]}));
+  /* traffic light on the avenue: green, yellow, then red while people cross */
+  let clock=2;const plane={x:-20,wait:3},CYCLE=30,light=()=>{const t=clock%CYCLE;return t<15?"g":t<17.5?"y":"r"};
+  const parts=season==="summer"?[]:Array.from({length:season==="winter"?46:20},()=>({x:r()*SW,y:r()*GY,v:(season==="winter"?9:6)+r()*8,ph:r()*6,c:season==="winter"?"#FFFFFF":season==="fall"?pick(["#D2691E","#F0A030","#9A4A14"]):pick(["#F2A7C3","#FBD3E0"])}));
   const drawParts=()=>parts.forEach(p=>box(g,p.x+Math.sin(clock*1.3+p.ph)*3,p.y,season==="winter"?1:2,1,p.c));
-  const drawPlane=()=>{const txt=pxClean(sceneInfo().aviator);if(!txt||plane.wait>0)return;const x=Math.round(plane.x),y=118,w=txt.length*4+5;
+  const drawPlane=()=>{const txt=pxClean(sceneInfo().aviator);if(!txt||plane.wait>0)return;const x=Math.round(plane.x),y=GY-96,w=txt.length*4+5;
     box(g,x-w-8,y-1,w,9,"#FFFFFF");box(g,x-w-8,y-1,w,1,"#F4B400");box(g,x-w-8,y+7,w,1,"#F4B400");pixelText(g,txt,x-w-5,y+1,"#14202E");box(g,x-8,y+3,8,1,"#14202E");
     box(g,x,y+1,12,4,"#C8373B");box(g,x+12,y+2,2,2,"#C8373B");box(g,x+3,y-1,5,2,"#E9EDF0");box(g,x-1,y-1,2,3,"#C8373B");box(g,x+9,y+2,2,1,"#BFE0F9");box(g,x+14,y+1,1,4,"#14202E")};
   const drawBday=()=>{const names=sceneInfo().bdays;if(!names.length)return;const nm=pxClean(names[Math.floor(clock/8)%names.length]).slice(0,14),h=Math.min(18,Math.round((clock%8)*14)),x=364,y=64;
     box(g,x+4,y-6,1,6,"#5D6670");box(g,x+57,y-6,1,6,"#5D6670");box(g,x,y,62,h,"#F4B400");box(g,x,y,62,1,"#14202E");
     if(h>=18){box(g,x,y+17,62,1,"#14202E");pixelText(g,"HAPPY BIRTHDAY",x+4,y+3,"#14202E");pixelText(g,nm,x+31-nm.length*2,y+10,"#14202E")}};
-  const drawTruck=v=>{const x=Math.round(v.x);box(g,x+10,v.y-15,v.L-10,12,"#FFFFFF");box(g,x+10,v.y-4,v.L-10,1,"#8C9399");pixelText(g,v.text,x+14,v.y-12,"#14202E");box(g,x,v.y-10,10,7,"#2446C7");box(g,x+1,v.y-9,4,3,"#BFE0F9");box(g,x,v.y-5,1,1,"#FFF7D0");[3,v.L-8].forEach(wx=>{box(g,x+wx,v.y-3,4,3,"#161616");box(g,x+wx+1,v.y-2,2,1,"#8A8A8A")})};
+  const drawTruck=v=>{const x=Math.round(v.x),c=x+v.L-10;box(g,x,v.y-15,v.L-10,12,"#FFFFFF");box(g,x,v.y-4,v.L-10,1,"#8C9399");pixelText(g,v.text,x+4,v.y-12,"#14202E");box(g,c,v.y-10,10,7,"#2446C7");box(g,c+5,v.y-9,4,3,"#BFE0F9");box(g,c+9,v.y-5,1,1,"#FFF7D0");[4,v.L-8].forEach(wx=>{box(g,x+wx,v.y-3,4,3,"#161616");box(g,x+wx+1,v.y-2,2,1,"#8A8A8A")})};
+  const drawSignals=()=>{const s=light(),t=clock%CYCLE,off="#3A3F44",walk=s==="r"&&t<25,flash=s==="r"&&t>=25&&Math.floor(clock*2)%2;
+    box(g,229,GY-45,3,3,s==="r"?"#E5483A":off);box(g,229,GY-41,3,3,s==="y"?"#F4B400":off);box(g,229,GY-37,3,3,s==="g"?"#3FCB6B":off);
+    [144,235].forEach(x=>{box(g,x,GY-26,5,5,"#1E2226");box(g,x+1,GY-25,3,3,walk?"#F4F8FB":flash?"#1E2226":"#F08A24")})};
+  /* one vehicle or bike: hold at the stop line unless the light is green and the crosswalk is empty; keep a gap behind the one ahead */
+  const drive=(o,dt,gap,go)=>{const f=o.x+o.L;let lim=o.v0;
+    if(!go&&f<=STOP_X+1)lim=Math.min(lim,Math.sqrt(90*Math.max(0,STOP_X-f)));
+    if(gap!=null)lim=Math.min(lim,Math.sqrt(90*Math.max(0,gap-5)));
+    o.s=lim<o.s?lim:Math.min(lim,o.s+30*dt);o.x+=o.s*dt;if(o.dist!=null)o.dist+=o.s*dt};
   const step=dt=>{
     clock+=dt;parts.forEach(p=>{p.y+=p.v*dt;if(p.y>GY+8){p.y=-2;p.x=r()*SW}});
     if(plane.wait>0)plane.wait-=dt;else{plane.x+=15*dt;if(plane.x>SW+230){plane.x=-20;plane.wait=18}}
     clouds.forEach(c=>{c.x+=c.sp*dt;if(c.x>SW)c.x=-c.img.width});
-    lane.list.forEach(v=>v.x+=v.d*v.v*dt);lane.list=lane.list.filter(v=>v.x>-v.L-20);
-    const edge=Math.max(...lane.list.map(v=>v.x+v.L),-999);
-    if(edge<SW-110&&r()<dt*.3){const news=pxClean(sceneInfo().news).slice(0,26);if(news&&!lane.list.some(v=>v.kind==="truck")&&r()<.5)lane.list.push({kind:"truck",text:news,L:news.length*4+18,d:-1,y:lane.y,x:SW,v:17});else lane.list.push(newVehicle(SW))}
-    lane.list.sort((a,b)=>a.x-b.x);for(let i=0;i<lane.list.length-1;i++){const a=lane.list[i],b=lane.list[i+1];if(b.x-(a.x+a.L)<8)b.v=Math.min(b.v,a.v)}
-    for(const b of bikes){b.x+=b.d*b.v*dt;b.dist+=b.v*dt}
-    for(let i=bikes.length-1;i>=0;i--)if(bikes[i].x<-14||bikes[i].x>SW+14)bikes.splice(i,1);
-    if(bikes.length<2&&r()<dt*.25){const b=newBike(0);b.x=b.d>0?-12:SW+2;bikes.push(b)}
+    const s=light(),t=clock%CYCLE,go=s==="g"&&!cross.length,all=[...lanes[0].list,...lanes[1].list,...bikes];
+    lanes.forEach((lane,li)=>{
+      lane.list.sort((a,b)=>b.x-a.x);lane.list.forEach((v,i)=>drive(v,dt,i?lane.list[i-1].x-(v.x+v.L):null,go));
+      lane.list=lane.list.filter(v=>v.x<SW+10);
+      const back=Math.min(...lane.list.map(v=>v.x),999);
+      if(back>46&&r()<dt*.3){const news=pxClean(sceneInfo().news).slice(0,26);
+        if(li===1&&news&&!lane.list.some(v=>v.kind==="truck")&&r()<.4){const L=news.length*4+18;lane.list.push({kind:"truck",text:news,L,d:1,y:lane.y,x:-L,v0:18,s:18})}
+        else lane.list.push(newVehicle(lane))}});
+    bikes.forEach(b=>drive(b,dt,null,go));
+    for(let i=bikes.length-1;i>=0;i--)if(bikes[i].x>SW+14)bikes.splice(i,1);
+    if(bikes.length<2&&r()<dt*.2)bikes.push(newBike(-12));
+    /* people cross the avenue on the walk signal, once the crosswalk is clear */
+    if(s==="r"&&t<21&&cross.length<4&&r()<dt*1.5&&!all.some(o=>o.x+o.L>STOP_X+1&&o.x<XW[0]+24)){const p=newPed(XW[0]+3+Math.floor(r()*14)),down=r()>.4;p.y=down?GY+8:SH+13;p.vy=(down?1:-1)*(9+r()*3);p.d=1;cross.push(p)}
+    for(let i=cross.length-1;i>=0;i--){const p=cross[i];p.y+=p.vy*dt;p.dist+=Math.abs(p.vy)*dt;
+      if(p.y>SH+14)cross.splice(i,1);else if(p.vy<0&&p.y<GY+7){cross.splice(i,1);p.y=GY+6;p.d=r()>.5?1:-1;if(peds.length<10)peds.push(p)}}
     for(const p of peds){p.x+=p.d*p.v*dt;p.dist+=p.v*dt}
     for(let i=peds.length-1;i>=0;i--)if(peds[i].x<-6||peds[i].x>SW+6)peds.splice(i,1);
     if(peds.length<8&&r()<dt*.8){const p=newPed(0);p.x=p.d>0?-4:SW+2;peds.push(p)}
@@ -1816,16 +1882,19 @@ function startScene(canvas){
   const draw=()=>{
     g.drawImage(sky,0,0);clouds.forEach(c=>g.drawImage(c.img,Math.round(c.x),c.y));
     birds.forEach(b=>{const up=Math.floor(b.t*6)%2,c=night?"#9FB0CF":"#2B3A4A";box(g,b.x,b.y,1,1,c);box(g,b.x-1,b.y-(up?1:0),1,1,c);box(g,b.x+1,b.y-(up?1:0),1,1,c)});
-    drawPlane();g.drawImage(city,0,0);drawBday();[...peds].sort((a,b)=>a.y-b.y).forEach(p=>drawPed(g,p));
-    bikes.forEach(b=>drawBiker(g,b));lane.list.forEach(v=>v.kind==="truck"?drawTruck(v):drawVehicle(g,v,night));drawParts();
-    if(night)lane.list.forEach(v=>{g.fillStyle="rgba(255,240,170,.22)";g.fillRect(Math.round(v.x-6),v.y-7,6,4)});
+    drawPlane();g.drawImage(city,0,0);drawBday();drawSignals();[...peds].sort((a,b)=>a.y-b.y).forEach(p=>drawPed(g,p));
+    bikes.forEach(b=>drawBiker(g,b));
+    lanes.forEach(lane=>lane.list.forEach(v=>{const x=Math.round(v.x);if(v.kind==="truck")drawTruck(v);else drawVehicle(g,{...v,x},night);
+      if(night){g.fillStyle="rgba(255,240,170,.3)";g.fillRect(x+v.L,v.y-6,4,2)}}));
+    [...cross].sort((a,b)=>a.y-b.y).forEach(p=>drawPed(g,{...p,y:Math.round(p.y)}));drawParts();
   };
-  const still=matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let last=0;
-  const loop=ts=>{const dt=Math.min(.05,last?(ts-last)/1000:0);last=ts;step(dt);draw();sceneRAF=requestAnimationFrame(loop)};
-  if(still)draw();else sceneRAF=requestAnimationFrame(loop);
+  /* 30 frames a second is plenty for pixel art, and nothing is drawn while the banner is scrolled out of view */
+  let last=0,seen=true;
+  if("IntersectionObserver"in window){sceneIO=new IntersectionObserver(e=>{seen=e[e.length-1].isIntersecting});sceneIO.observe(canvas)}
+  const loop=ts=>{sceneRAF=requestAnimationFrame(loop);if(!seen||ts-last<30)return;const dt=Math.min(.05,last?(ts-last)/1000:0);last=ts;step(dt);draw()};
+  draw();if(!matchMedia("(prefers-reduced-motion: reduce)").matches)sceneRAF=requestAnimationFrame(loop);
 }
-function stopScene(){if(sceneRAF)cancelAnimationFrame(sceneRAF);sceneRAF=0;sceneCanvas=null}
+function stopScene(){if(sceneRAF)cancelAnimationFrame(sceneRAF);if(sceneIO)sceneIO.disconnect();sceneRAF=0;sceneIO=null;sceneCanvas=null}
 
 function homeAuth(){
   let h=canCouncil()?`<button class="hbtn sm glass" data-act="mode" data-to="council">Council view</button>`:"";
@@ -2653,6 +2722,10 @@ function inboxItems(){if(!me.id||!canJoin())return[];const out=[],now=new Date()
   /* reminders appear the morning before */
   for(const o of S.opps)if(savedOpps.has(o.id)&&o.deadline&&o.deadline>=TODAY&&o.deadline<=in2)add("op"+o.id,dayAt(iso(addDays(parse(o.deadline),-2)),7),`Saved opportunity closes ${dueIn(o.deadline).toLowerCase()}`,o.title,"#opportunities","warn");
   const su=mySignups();for(const e of S.events)if(su[e.id]&&e.date>=TODAY&&e.date<=in2)add("ev"+e.id,dayAt(iso(addDays(parse(e.date),-1)),7),`${dueIn(e.date)}: ${e.title}`,[e.time?fmtTime(e.time):"",e.location||""].filter(Boolean).join(", "),"#events","warn");
+  /* council calendar: being tagged, and your items due today or tomorrow */
+  if(canCouncil())for(const p of S.plans){if(!p.title||!p.date)continue;const tg=p.tags||[];
+    if(tg.includes(me.id)&&p.by!==me.id)add("pt"+p.id,(p.taggedAt||{})[me.id]||p.created,`${p.byName||nameOf(p.by)} tagged you: “${p.title}”`,`On the council calendar for ${longd(p.date)}.`,"#planner","info");
+    if(!p.done&&planMine(p)&&p.date>=TODAY&&p.date<=in2)add("pd"+p.id,dayAt(iso(addDays(parse(p.date),-1)),7),`${dueIn(p.date)}: ${p.title}`,"On the council calendar.","#planner","warn")}
   return out.sort((a,b)=>b.t.localeCompare(a.t)).slice(0,30)}
 /* first time: only the last 3 days count as new */
 const inboxSeen=()=>myMine().inboxSeen||new Date(Date.now()-3*864e5).toISOString();
@@ -2795,6 +2868,9 @@ async function buildDOCX(p,template=false){
   z.file("word/document.xml",docXml);
   return z.generateAsync({type:"blob",mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
 }
+/* the export libraries are big, so they load the first time someone exports, not on every visit */
+const LIBS={};
+function needLib(name,src){if(window[name])return Promise.resolve();return LIBS[name]=LIBS[name]||new Promise((ok,no)=>{const el=document.createElement("script");el.src=src;el.onload=()=>ok();el.onerror=()=>{delete LIBS[name];el.remove();no(new Error("load"))};document.head.appendChild(el)})}
 async function offer(filename,data){
   const dl=window.claude&&window.claude.use?await claude.use("downloads"):null;
   if(!dl){toast("Downloads aren't available in this view.");return false}
@@ -2805,8 +2881,8 @@ const fileBase=p=>((p.number?p.number+" ":"")+(p.title||"Proposal")).replace(/[\
 async function exportProposal(id,kind){
   const tpl=id==="template",p=tpl?blankProposal():S.proposals.find(x=>x.id===id);if(!p)return;
   if(tpl){p.sponsor="";p.budget=[]}
-  if(kind==="pdf"&&!window.jspdf){toast("The PDF tool didn't load. Reload the page and try again.");return}
-  if(kind==="docx"&&!window.JSZip){toast("The document tool didn't load. Reload the page and try again.");return}
+  try{await(kind==="pdf"?needLib("jspdf","https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"):needLib("JSZip","https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"))}
+  catch(e){toast(kind==="pdf"?"The PDF tool didn't load. Check your connection and try again.":"The document tool didn't load. Check your connection and try again.");return}
   const data=kind==="pdf"?buildPDF(p,tpl):await buildDOCX(p,tpl);
   const ok=await offer((tpl?"StuCo proposal template":fileBase(p))+"."+kind,data);
   if(ok&&!tpl&&canAct())log(kind==="pdf"?"exported a PDF of":"exported a Google Docs / Word copy of","proposal",p.title);
@@ -3043,6 +3119,7 @@ function fieldHTML(f,v){
   if(f.type==="checkbox")return`<div class="field check${full}"><input type="checkbox" id="${id}" ${v?"checked":""}><label for="${id}">${f.label}</label></div>`;
   if(f.type==="photos")return`<div class="field full"><label for="${id}">${f.label}</label><div class="thumbs" id="${id}-list"></div><div class="photo-row"><input type="file" id="${id}" accept="image/*" ${f.multiple?"multiple":""}><span class="sub" id="${id}-status" role="status"></span></div>${f.help?`<span class="sub">${f.help}</span>`:""}</div>`;
   if(f.type==="photo")return`<div class="field full"><label for="${id}">${f.label}</label><div class="photo-row"><img id="${id}-prev" class="avatar xl" src="${esc(v||"")}" alt="" ${v?"":"hidden"}><input type="file" id="${id}" accept="image/*"><button type="button" class="btn sm ghost" id="${id}-clear" ${v?"":"hidden"}>Remove photo</button></div><span class="sub">Square photos look best. It's resized automatically.</span></div>`;
+  if(f.type==="people")return`<div class="field full"><span class="flabel" id="${id}-l">${f.label}</span><div class="people" id="${id}" role="group" aria-labelledby="${id}-l">${f.options.map(([k,l])=>`<label class="pchk"><input type="checkbox" value="${esc(k)}" ${(v||[]).includes(k)?"checked":""}><span>${esc(l)}</span></label>`).join("")||`<span class="sub">No council members yet.</span>`}</div>${f.help?`<span class="sub">${f.help}</span>`:""}</div>`;
   let input;
   if(f.type==="textarea")input=`<textarea id="${id}"${req} placeholder="${esc(f.placeholder||"")}">${esc(v)}</textarea>`;
   else if(f.type==="select")input=`<select id="${id}">${f.options.map(([k,l])=>`<option value="${esc(k)}" ${String(v??"")===String(k)?"selected":""}>${esc(l)}</option>`).join("")}</select>`;
@@ -3080,8 +3157,8 @@ function openForm({title,fields,values={},submit,onDelete,submitLabel="Save",not
   $("#mform").onsubmit=async e=>{
     e.preventDefault();const vals={};
     if(uploading){$("#merr").textContent="Wait for the photos to finish uploading.";return}
-    for(const f of fields){const el=$("#f-"+f.id);vals[f.id]=f.type==="photos"?(f.multiple?lists[f.id]:(lists[f.id][0]||"")):f.type==="photo"?photoVals[f.id]:f.type==="checkbox"?el.checked:f.type==="number"?(el.value===""?null:Number(el.value)):el.value.trim()}
-    const miss=fields.find(f=>f.required&&!vals[f.id]);if(miss){$("#merr").textContent=`Add ${miss.label.toLowerCase()} to continue.`;return}
+    for(const f of fields){const el=$("#f-"+f.id);vals[f.id]=f.type==="photos"?(f.multiple?lists[f.id]:(lists[f.id][0]||"")):f.type==="photo"?photoVals[f.id]:f.type==="checkbox"?el.checked:f.type==="people"?[...el.querySelectorAll("input:checked")].map(i=>i.value):f.type==="number"?(el.value===""?null:Number(el.value)):el.value.trim()}
+    const miss=fields.find(f=>f.required&&(Array.isArray(vals[f.id])?!vals[f.id].length:!vals[f.id]));if(miss){$("#merr").textContent=`Add ${miss.label.toLowerCase()} to continue.`;return}
     $("#msave").disabled=true;
     if(await submit(vals)!==false)closeModal();else $("#msave").disabled=false;
   };
@@ -3313,6 +3390,14 @@ document.addEventListener("click",async e=>{
     case"att-open":selMeeting=id;attView="roll";return render();
     case"mark":{const m=S.meetings.find(x=>x.id===id);return save(()=>col("meetings").doc(id).update({records:{[b.dataset.m]:b.dataset.v}}),null,[`marked ${nameOf(b.dataset.m)} ${label(ATT,b.dataset.v).toLowerCase()} at`,"meeting",m&&m.title])}
     case"all-present":{const r={},m=S.meetings.find(x=>x.id===id);roster().forEach(x=>{if(attV(m,x.id)!=="na")r[x.id]="present"});return save(()=>col("meetings").doc(id).update({records:r}),"Everyone marked present",["marked everyone present at","meeting",m&&m.title])}
+    case"plan-prev":planCursor=new Date(planCursor.getFullYear(),planCursor.getMonth()-1,1);return render();
+    case"plan-next":planCursor=new Date(planCursor.getFullYear(),planCursor.getMonth()+1,1);return render();
+    case"plan-today":planDay=TODAY;planCursor=monthOf(TODAY);return render();
+    case"plan-filter":planFilter=b.dataset.to;return render();
+    case"plan-day":{planDay=b.dataset.date;render();const sc=$("#sec-planday");if(sc)sc.scrollIntoView({block:"nearest"});return}
+    case"plan-add":return planForm(null,{date:b.dataset.date||planDay});
+    case"plan-edit":return planForm(id);
+    case"plan-check":{const p=S.plans.find(x=>x.id===id);if(!p)return;const on=!!b.checked;return save(()=>col("plans").doc(id).update(on?{done:true,doneBy:me.id,doneAt:new Date().toISOString()}:{done:false,doneBy:null,doneAt:null}),null,[on?"checked off":"reopened","calendar item",p.title])}
     case"cal-prev":calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);return render();
     case"cal-next":calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+1,1);return render();
     case"cal-today":calCursor=firstOfMonth(new Date());return render();
@@ -3388,6 +3473,9 @@ const fullData=c=>!!SUBS[c]&&SUBS[c].lvl==="all"&&loaded.has(c);
 const subsReady=()=>Object.keys(SUBS).every(c=>loaded.has(c))&&loaded.has("config");
 function subDone(c,snap){if(!snap.metadata||!snap.metadata.fromCache)loaded.add(c);if(bootDone&&subsReady()){clearTimeout(slowTimer);if(dbState!=="ok")setStatus("ok")}}
 function subFail(){clearTimeout(slowTimer);setStatus("err");render()}
+/* snapshots arrive in bursts (about 25 collections at sign-in), so the page is drawn once per burst, not once per collection */
+let dataT=0,freshMembers=false;
+function dataChanged(){if(dataT)return;dataT=setTimeout(()=>{dataT=0;render();if(freshMembers){freshMembers=false;autoApprove()}settleGames();writeStats();postAuto()},16)}
 function want(c,lvl){
   if(!db||(COUNCIL_ONLY.includes(c)&&!isEditor))return;
   if(!LEAN)lvl="all";
@@ -3395,7 +3483,7 @@ function want(c,lvl){
   const cur=SUBS[c];if(cur&&LV[cur.lvl]>=LV[lvl])return;
   if(cur&&cur.unsub)try{cur.unsub()}catch(e){}
   loaded.delete(c);SUBS[c]={lvl,unsub:null};
-  const got=docs=>{S[c]=docs;if(c==="scores"){const st=docs.find(d=>d.id==="_stats");if(st)STATS=st}render();if(c==="members")autoApprove();settleGames();writeStats();postAuto()};
+  const got=docs=>{S[c]=docs;if(c==="scores"){const st=docs.find(d=>d.id==="_stats");if(st)STATS=st}if(c==="members")freshMembers=true;dataChanged()};
   if(lvl==="self"){
     const ids=c==="scores"?[me.id,"_settings","_stats"]:[me.id],parts={};let n=0;
     const uns=ids.map(id=>db.doc(c+"/"+id).onSnapshot(d=>{if(id==="_stats"){STATS=d.exists?d.data():{}}else parts[id]=d.exists?{id,...d.data()}:null;if(++n>=ids.length||loaded.has(c)){subDone(c,d);got(Object.values(parts).filter(Boolean))}},subFail));
@@ -3420,7 +3508,7 @@ const PAGE_NEEDS={
   myspace:{wins:"all",posts:"all"},
 };
 /* council: approvals, settlement and the summary need everyone's documents */
-const BASE_COUNCIL={submissions:"all",clubdrafts:"all",suggestions:"all",done:"all",scores:"all",picks:"all",tasks:"all",claims:"all",members:"all",games:"all",gamekeys:"all",events:"all",bulletin:"all",proposals:"all",meetings:"all"};
+const BASE_COUNCIL={plans:"all",submissions:"all",clubdrafts:"all",suggestions:"all",done:"all",scores:"all",picks:"all",tasks:"all",claims:"all",members:"all",games:"all",gamekeys:"all",events:"all",bulletin:"all",proposals:"all",meetings:"all"};
 const COUNCIL_PAGES={overview:{gamevotes:"all",plays:"all",signups:"all",replies:"all",history:"all"},history:{history:"all"},members:{spaces:"all"},home:{signups:"all",replies:"all",gamevotes:"all",plays:"all"},play:{gamevotes:"all",plays:"all",predictions:"all",challenges:"all"},clubs:{clubs:"all",clubposts:"all"},club:{clubs:"all",clubposts:"all",picks:"all"}};
 function ensureData(){if(!db)return;const v=shownView()||"home",need={...BASE_STUDENT,...(PAGE_NEEDS[v]||{})};
   /* everyone's votes only on days a This or That or photo game still needs its live tally */
@@ -3445,9 +3533,57 @@ function writeStats(){if(!LEAN||!db||!canAct()||!["signups","replies","scores"].
   const key=JSON.stringify(data);if(key===statsLast||key===JSON.stringify({...STATS,at:undefined}))return;statsLast=key;
   try{await db.doc("scores/_stats").set({...data,at:new Date().toISOString()})}catch(e){}},30000)}
 
+/* ---------- council calendar (council view only) ----------
+   One shared month that every council member can add to, on any day. Each thing added is a checklist item.
+   plans/<id>: {title,date,time,notes,tags:[uid],by,byName,created,done,doneBy,doneAt,taggedAt:{uid:time}}.
+   While tagged people are still waiting for their email the item also has mail:true and notify:[uid];
+   tools/nightly sends the email and clears both (plannerMail), and sends due-date reminders (plannerDue). */
+const monthOf=d=>{const x=parse(d);return new Date(x.getFullYear(),x.getMonth(),1)};
+let planCursor=monthOf(TODAY),planDay=TODAY,planFilter="all";
+const planMine=p=>(p.tags||[]).includes(me.id)||(!(p.tags||[]).length&&p.by===me.id);
+const planSort=(a,b)=>(a.date||"").localeCompare(b.date||"")||(a.time||"99").localeCompare(b.time||"99")||(a.created||"").localeCompare(b.created||"");
+function planItem(p,showDate){
+  const tg=p.tags||[],late=!p.done&&p.date<TODAY;
+  return`<li class="plan${p.done?" done":""}"><input type="checkbox" id="pl-${p.id}" data-act="plan-check" data-id="${p.id}" ${p.done?"checked":""} ${canAct()?"":"disabled"}><div class="grow"><label class="title" for="pl-${p.id}">${esc(p.title)}</label><div class="sub parts">${showDate?`<span${late?' class="plan-late"':""}>${late?"Overdue: ":""}${longd(p.date)}</span>`:""}${p.time?`<span>${fmtTime(p.time)}</span>`:""}${tg.length?`<span>For ${tg.map(t=>esc(t===me.id?"you":nameOf(t))).join(", ")}</span>`:""}<span>Added by ${esc(p.by===me.id?"you":p.byName||nameOf(p.by))}</span>${p.done&&p.doneBy?`<span>Checked off by ${esc(p.doneBy===me.id?"you":nameOf(p.doneBy))}</span>`:""}</div>${p.notes?`<div class="plan-notes">${esc(p.notes)}</div>`:""}</div>${canAct()?`<button class="btn sm ghost" data-act="plan-edit" data-id="${p.id}" aria-label="Edit ${esc(p.title)}">Edit</button>`:""}</li>`;
+}
+function planner(){
+  const m=planCursor,start=addDays(m,-m.getDay()),days=[];for(let i=0;i<42;i++)days.push(addDays(start,i));
+  const rows=days[35].getMonth()!==m.getMonth()?days.slice(0,35):days;
+  const all=S.plans.filter(p=>p.title&&p.date).sort(planSort),list=planFilter==="mine"?all.filter(planMine):all;
+  const evs=S.events.filter(e=>e.date&&!e.removed).sort(byDate);
+  const dayItems=list.filter(p=>p.date===planDay),dayEvs=evs.filter(e=>e.date===planDay);
+  const soon=iso(addDays(parse(TODAY),14)),open=list.filter(p=>!p.done&&p.date<=soon&&p.date!==planDay);
+  const mineOpen=all.filter(p=>!p.done&&planMine(p)).length;
+  const cell=d=>{const k=iso(d),it=list.filter(p=>p.date===k),de=evs.filter(e=>e.date===k),left=it.filter(p=>!p.done).length,show=[...it.map(p=>`<span class="ev plan${p.done?" done":""}">${p.done?"☑":"☐"} ${esc(p.title)}</span>`),...de.map(e=>`<span class="ev chip ${esc(e.type)}">${esc(e.title)}</span>`)];
+    return`<button class="day ${d.getMonth()!==m.getMonth()?"out":""} ${k===TODAY?"today":""}" data-act="plan-day" data-date="${k}" aria-pressed="${k===planDay}" aria-label="${d.toDateString()}: ${it.length} checklist item${it.length===1?"":"s"}${left?`, ${left} not done`:""}, ${de.length} event${de.length===1?"":"s"}"><span class="num">${d.getDate()}</span>${show.slice(0,4).join("")}${show.length>4?`<span class="ev more">+${show.length-4} more</span>`:""}</button>`};
+  return head("One shared calendar for Student Council. Anyone on council can add to any day, and everything added is a checklist item.","Council calendar",canAct()?`<button class="btn primary" data-act="plan-add">+ Add to the calendar</button>`:"")+
+  `<div class="calbar"><button class="btn sm" data-act="plan-prev" aria-label="Previous month">←</button><h2>${m.toLocaleDateString(undefined,{month:"long",year:"numeric"})}</h2><button class="btn sm" data-act="plan-next" aria-label="Next month">→</button><button class="btn sm ghost" data-act="plan-today">Today</button><span class="sp"></span><div class="seg toggle" role="group" aria-label="Whose items to show"><button data-act="plan-filter" data-to="all" aria-pressed="${planFilter==="all"}">Everyone</button><button data-act="plan-filter" data-to="mine" aria-pressed="${planFilter==="mine"}">Mine${mineOpen?` (${mineOpen})`:""}</button></div></div>
+  <div class="calscroll"><div class="cal plancal">${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>`<div class="dow">${d}</div>`).join("")}${rows.map(cell).join("")}</div></div>
+  <section class="panel" id="sec-planday"><h2>${fmt(planDay,{weekday:"long",month:"long",day:"numeric"})}${canAct()?`<button class="btn sm" data-act="plan-add" data-date="${planDay}">+ Add to this day</button>`:""}</h2>
+  ${dayItems.length?`<ul class="list plans">${dayItems.map(p=>planItem(p)).join("")}</ul>`:`<p class="sub" style="margin:10px 0 0">${planFilter==="mine"?"Nothing of yours on this day.":"Nothing on the checklist for this day yet."}</p>`}
+  ${dayEvs.length?`<p class="sub plan-evs"><b>Also on the school calendar:</b> ${dayEvs.map(e=>esc(e.title)+(e.time?" at "+fmtTime(e.time):"")).join(", ")}</p>`:""}</section>
+  <section class="panel"><h2>Still to do</h2>${open.length?`<ul class="list plans">${open.map(p=>planItem(p,true)).join("")}</ul>`:`<p class="sub" style="margin:10px 0 0">Nothing else open in the next two weeks.</p>`}</section>`;
+}
+function planForm(id,preset={}){
+  const doc=id&&S.plans.find(x=>x.id===id),people=roster().map(x=>[x.id,x.id===me.id?x.name+" (you)":x.name]);
+  if(isPres&&me.id&&!people.some(([k])=>k===me.id))people.unshift([me.id,(myName()||"President")+" (you)"]);
+  openForm({title:doc?"Edit calendar item":"Add to the council calendar",values:doc||{tags:[],...preset},
+    fields:[{id:"title",label:"What needs to happen",required:true,full:true},{id:"date",label:"Date",type:"date",required:true},{id:"time",label:"Time (optional)",type:"time"},{id:"tags",label:"Tag council members",type:"people",options:people,help:"Tagged members see it in their notifications and get an email, plus a reminder when it's due."},{id:"notes",label:"Notes",type:"textarea"}],
+    submit:v=>{const now=new Date().toISOString(),old=doc?doc.tags||[]:[],fresh=v.tags.filter(t=>!old.includes(t)&&t!==me.id);
+      const notify=[...new Set([...(doc&&doc.mail?doc.notify||[]:[]).filter(t=>v.tags.includes(t)),...fresh])];
+      const data={title:v.title,date:v.date,time:v.time,notes:v.notes,tags:v.tags,notify,mail:notify.length>0};
+      if(fresh.length)data.taggedAt=Object.fromEntries(fresh.map(t=>[t,now]));
+      planDay=v.date;planCursor=monthOf(v.date);
+      return doc?save(()=>col("plans").doc(id).update(data),"Saved",["edited","calendar item",v.title])
+        :save(()=>col("plans").add({...data,by:me.id,byName:myName(),created:now,done:false}),fresh.length?"Added. Tagged members will be notified.":"Added to the calendar",["added","calendar item",v.title])},
+    onDelete:doc?()=>save(()=>col("plans").doc(id).delete(),"Deleted",["deleted","calendar item",doc.title]):null});
+}
+
 /* ---------- boot ---------- */
 render();
 (async()=>{
+  /* on the website the Firebase scripts are deferred so the page paints first; they have run by DOMContentLoaded */
+  if(document.readyState==="loading")await new Promise(r=>addEventListener("DOMContentLoaded",r,{once:true}));
   if(!window.claude||!window.claude.use){setStatus("offline");render();return}
   const[d,u]=await Promise.all([claude.use("db"),claude.use("user")]);
   db=d;U=u;LEAN=!!(db&&typeof db.query==="function");

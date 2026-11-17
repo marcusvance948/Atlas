@@ -2,6 +2,8 @@
 
 One Google Apps Script that runs every hour and does what's due, so nothing waits for a council member to open the site:
 
+It also checks every 10 minutes for council members who were just tagged on the council calendar and emails them, and at 7:00 emails (and notifies, if they turned phone notifications on) each council member their unchecked calendar items due today or tomorrow. If you installed an earlier version, paste the new `Code.gs` and run `setup()` again so the 10-minute trigger is added.
+
 | When (New York time) | What |
 |---|---|
 | 5:00 | Settle yesterday's games: points, streak bonuses (+5 every 5th game day in a row). Then rewrite the summary. |

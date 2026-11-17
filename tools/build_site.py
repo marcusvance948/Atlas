@@ -38,6 +38,8 @@ head = f"""<!doctype html>
 <meta property="og:title" content="{TITLE}">
 <meta property="og:description" content="{DESCRIPTION}">
 <meta property="og:url" content="{SITE_URL}">
+<meta property="og:image" content="{SITE_URL}icons/icon-512.png">
+<meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#14202E">
 <link rel="icon" href="icons/favicon-32.png" type="image/png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -47,12 +49,13 @@ head = f"""<!doctype html>
 <meta name="apple-mobile-web-app-title" content="Student Hub">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>:root{{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0;font:14px system-ui,sans-serif}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
-<script src="https://www.gstatic.com/firebasejs/{FIREBASE}/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/{FIREBASE}/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/{FIREBASE}/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/{FIREBASE}/firebase-messaging-compat.js"></script>
-<script src="firebase-config.js?v={ver('firebase-config.js')}"></script>
-<script src="firebase-adapter.js?v={ver('firebase-adapter.js')}"></script>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<script defer src="https://www.gstatic.com/firebasejs/{FIREBASE}/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/{FIREBASE}/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/{FIREBASE}/firebase-firestore-compat.js"></script>
+<script>window.FIREBASE_VERSION="{FIREBASE}"</script>
+<script defer src="firebase-config.js?v={ver('firebase-config.js')}"></script>
+<script defer src="firebase-adapter.js?v={ver('firebase-adapter.js')}"></script>
 <script>if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{{}}))</script>
 </head>
 <body>
@@ -101,4 +104,9 @@ self.addEventListener("fetch", e => {{
     '<?xml version="1.0" encoding="UTF-8"?>\n'
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     f"  <url><loc>{SITE_URL}</loc></url>\n</urlset>\n", encoding="utf-8")
+# mistyped addresses go back to the app instead of GitHub's error page
+(ROOT / "site" / "404.html").write_text(
+    f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    f'<title>Page not found | {TITLE}</title><meta name="robots" content="noindex"><meta http-equiv="refresh" content="0;url={SITE_URL}"></head>'
+    f'<body style="font:16px system-ui,sans-serif;padding:24px"><p>That page doesn\'t exist. <a href="{SITE_URL}">Go to {TITLE}</a>.</p></body></html>\n', encoding="utf-8")
 print("Built site/index.html", len(out), "bytes")

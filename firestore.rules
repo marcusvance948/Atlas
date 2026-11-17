@@ -73,6 +73,8 @@ service cloud.firestore {
       allow delete: if isCouncil();
     }
     match /members/{uid} { allow read: if member(); allow write: if isOwner() || isSelf(uid); }
+    // Council calendar: a shared checklist every council member can add to, edit and check off
+    match /plans/{id}    { allow read, write: if isCouncil(); }
     match /tasks/{id}    { allow read: if member(); allow write: if isOwner(); }
     match /claims/{uid}  { allow read: if member(); allow write: if isOwner() || (isSelf(uid) && isCouncil()); }
 

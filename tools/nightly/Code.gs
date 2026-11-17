@@ -4,6 +4,8 @@
  *   07:00  morning phone notification (today's game, your streak, yesterday's points)
  *   12:00, 16:00  rewrite the summary so like, sign-up and reply counts stay fresh
  *   Sunday 17:00  weekly email digest to students who turned it on
+ *   every 10 minutes  council calendar: email members who were just tagged on an item
+ *   07:00  council calendar: email and phone reminder for items due today or tomorrow
  *   06:00  game-day bulletin post (varsity home games, NYSAIS and ACIS finals) from the Aviators athletics schedule
  * It signs in to Firestore as the Google account that runs it, so that account must be an Owner or Editor
  * of the Firebase project. No keys are stored anywhere. Set up once: paste Code.gs and appsscript.json,
@@ -25,6 +27,7 @@ var ATHLETICS_URL = "https://storage.googleapis.com/avenues-athletics-data/sched
 function setup() {
   ScriptApp.getProjectTriggers().forEach(function (t) { ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger("tick").timeBased().everyHours(1).create();
+  ScriptApp.newTrigger("plannerMail").timeBased().everyMinutes(10).create();
   var r = runNow();
   Logger.log("Set up. First run: " + JSON.stringify(r));
 }
@@ -34,6 +37,7 @@ function tick() {
   if (STATS_HOURS.indexOf(h) >= 0) out.stats = writeStats();
   if (h === GAMES_HOUR) out.games = gameDay();
   if (h === PUSH_HOUR) out.push = morningPush();
+  if (h === PUSH_HOUR) out.planner = plannerDue();
   // Sunday evening, then Monday and Tuesday for anyone the daily email limit left out
   if (h === DIGEST.hour && [DIGEST.day, (DIGEST.day + 1) % 7, (DIGEST.day + 2) % 7].indexOf(dow) >= 0) out.digest = weeklyDigest();
   if (Object.keys(out).length) Logger.log(JSON.stringify(out));
@@ -301,4 +305,64 @@ function gameDay() {
   doc.date = (old && old.date) || today; doc.author = (old && old.author) || ""; doc.pinned = !!(old && old.pinned); doc.at = (old && old.at) || new Date().toISOString();
   commit_([replaceWrite_(path, doc)]);
   return (old ? "updated" : "posted") + " (" + games.length + ")";
+}
+
+/* ---------------- 6. council calendar: tag emails and due-date reminders ---------------- */
+/** Documents in a collection where one field equals a value (reads only the matches). */
+function where_(col, field, value) {
+  var r = call_("post", BASE + ":runQuery", { structuredQuery: { from: [{ collectionId: col }], where: { fieldFilter: { field: { fieldPath: field }, op: "EQUAL", value: enc_(value) } } } }) || [];
+  return r.filter(function (x) { return x.document; }).map(function (x) { var o = decFields_(x.document.fields); o.id = x.document.name.split("/").pop(); return o; });
+}
+function esc_(t) { return String(t || "").replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }); }
+function emailOf_(uid, cache) {
+  if (!(uid in cache)) { var d = call_("get", BASE + "/private/" + encodeURIComponent(uid)); cache[uid] = d && d.fields ? (decFields_(d.fields).email || "") : ""; }
+  return cache[uid];
+}
+function planDate_(s) { return Utilities.formatDate(parse_(s), TZ, "EEEE, MMMM d"); }
+function planButton_() { return "<p><a href='" + SITE_URL + "#planner' style='background:#F4B400;color:#14202E;padding:10px 16px;text-decoration:none;font-weight:bold'>Open the council calendar</a></p>"; }
+/** Every 10 minutes: email the council members who were just tagged on a calendar item (the site sets mail:true and notify:[uid]). */
+function plannerMail() {
+  var pending = where_("plans", "mail", true);
+  if (!pending.length) return "no new tags";
+  var cache = {}, sent = 0, writes = [];
+  pending.forEach(function (p) {
+    var left = [];
+    (p.notify || []).forEach(function (uid) {
+      var email = emailOf_(uid, cache);
+      if (!email) return;   // no account yet, nothing to send
+      if (MailApp.getRemainingDailyQuota() < 1) { left.push(uid); return; }
+      MailApp.sendEmail({ to: email, name: "Avenues Student Council", subject: (p.byName || "A council member") + " tagged you: " + p.title,
+        htmlBody: "<div style='font-family:Arial,sans-serif;max-width:560px'><h2 style='margin:0 0 8px'>" + esc_(p.title) + "</h2>" +
+          "<p><b>" + esc_(p.byName || "A council member") + "</b> tagged you on the council calendar for <b>" + esc_(planDate_(p.date)) + "</b>.</p>" +
+          (p.notes ? "<p style='white-space:pre-wrap'>" + esc_(p.notes) + "</p>" : "") + planButton_() + "</div>" });
+      sent++;
+    });
+    writes.push(mergeWrite_("plans/" + p.id, { mail: left.length > 0, notify: left }, ["mail", "notify"]));
+  });
+  commit_(writes);
+  return "emailed " + sent + " tagged";
+}
+/** 7:00: one email (and a phone notification, if on) per person listing their unchecked items due today or tomorrow. */
+function plannerDue() {
+  var TODAY = today_(), TOMORROW = addDays_(TODAY, 1), per = {};
+  list_("plans").forEach(function (p) {
+    if (p.done || !p.title || (p.date !== TODAY && p.date !== TOMORROW)) return;
+    ((p.tags && p.tags.length) ? p.tags : [p.by]).forEach(function (uid) { if (uid) (per[uid] = per[uid] || []).push(p); });
+  });
+  var uids = Object.keys(per);
+  if (!uids.length) return "nothing due";
+  var cache = {}, mine = byId_(list_("mine")), sent = 0;
+  uids.forEach(function (uid) {
+    var items = per[uid].sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+    var line = function (p) { return (p.date === TODAY ? "Today" : "Tomorrow") + ": " + p.title; };
+    var push = (mine[uid] || {}).push;
+    if (push && push.token) sendPush_(push.token, items.length === 1 ? line(items[0]) : items.length + " council items due", items.length === 1 ? "On the council calendar." : items.map(line).join(" · "), SITE_URL + "#planner");
+    var email = emailOf_(uid, cache);
+    if (!email || MailApp.getRemainingDailyQuota() < 1) return;
+    MailApp.sendEmail({ to: email, name: "Avenues Student Council", subject: items.length === 1 ? "Due " + line(items[0]).replace(/^T/, "t") : items.length + " council items due",
+      htmlBody: "<div style='font-family:Arial,sans-serif;max-width:560px'><h2 style='margin:0 0 8px'>Due on the council calendar</h2><ul>" +
+        items.map(function (p) { return "<li><b>" + (p.date === TODAY ? "Today" : "Tomorrow") + "</b>: " + esc_(p.title) + "</li>"; }).join("") + "</ul>" + planButton_() + "</div>" });
+    sent++;
+  });
+  return "reminded " + sent;
 }
