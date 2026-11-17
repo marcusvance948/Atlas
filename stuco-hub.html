@@ -1128,7 +1128,7 @@ async function save(fn,okMsg,entry){
   if(!db){toast("Saving isn't available in this view.");return false}
   try{await fn();if(okMsg)toast(okMsg);if(entry)log(...entry);return true}
   catch(e){
-    if(e&&e.code==="invalid_argument")toast("You don't have permission to make that change.");
+    if(e&&e.code==="invalid_argument")toast(current()==="planner"?"Firebase blocked that. The president needs to publish the council calendar rule in Firestore Rules first.":"You don't have permission to make that change.");
     else if(e&&e.code==="quota_exceeded")toast("The council's storage is full. Delete old items, then try again.");
     else toast("Couldn't save that change. Check your connection and try again.");
     return false
@@ -2724,7 +2724,7 @@ function inboxItems(){if(!me.id||!canJoin())return[];const out=[],now=new Date()
   const su=mySignups();for(const e of S.events)if(su[e.id]&&e.date>=TODAY&&e.date<=in2)add("ev"+e.id,dayAt(iso(addDays(parse(e.date),-1)),7),`${dueIn(e.date)}: ${e.title}`,[e.time?fmtTime(e.time):"",e.location||""].filter(Boolean).join(", "),"#events","warn");
   /* council calendar: being tagged, and your items due today or tomorrow */
   if(canCouncil())for(const p of S.plans){if(!p.title||!p.date)continue;const tg=p.tags||[];
-    if(tg.includes(me.id)&&p.by!==me.id)add("pt"+p.id,(p.taggedAt||{})[me.id]||p.created,`${p.byName||nameOf(p.by)} tagged you: “${p.title}”`,`On the council calendar for ${longd(p.date)}.`,"#planner","info");
+    if(tg.includes(me.id)&&p.by!==me.id&&!p.quiet)add("pt"+p.id,(p.taggedAt||{})[me.id]||p.created,`${p.byName||nameOf(p.by)} tagged you: “${p.title}”`,`On the council calendar for ${longd(p.date)}.`,"#planner","info");
     if(!p.done&&planMine(p)&&p.date>=TODAY&&p.date<=in2)add("pd"+p.id,dayAt(iso(addDays(parse(p.date),-1)),7),`${dueIn(p.date)}: ${p.title}`,"On the council calendar.","#planner","warn")}
   return out.sort((a,b)=>b.t.localeCompare(a.t)).slice(0,30)}
 /* first time: only the last 3 days count as new */
@@ -3544,7 +3544,7 @@ const planMine=p=>(p.tags||[]).includes(me.id)||(!(p.tags||[]).length&&p.by===me
 const planSort=(a,b)=>(a.date||"").localeCompare(b.date||"")||(a.time||"99").localeCompare(b.time||"99")||(a.created||"").localeCompare(b.created||"");
 function planItem(p,showDate){
   const tg=p.tags||[],late=!p.done&&p.date<TODAY;
-  return`<li class="plan${p.done?" done":""}"><input type="checkbox" id="pl-${p.id}" data-act="plan-check" data-id="${p.id}" ${p.done?"checked":""} ${canAct()?"":"disabled"}><div class="grow"><label class="title" for="pl-${p.id}">${esc(p.title)}</label><div class="sub parts">${showDate?`<span${late?' class="plan-late"':""}>${late?"Overdue: ":""}${longd(p.date)}</span>`:""}${p.time?`<span>${fmtTime(p.time)}</span>`:""}${tg.length?`<span>For ${tg.map(t=>esc(t===me.id?"you":nameOf(t))).join(", ")}</span>`:""}<span>Added by ${esc(p.by===me.id?"you":p.byName||nameOf(p.by))}</span>${p.done&&p.doneBy?`<span>Checked off by ${esc(p.doneBy===me.id?"you":nameOf(p.doneBy))}</span>`:""}</div>${p.notes?`<div class="plan-notes">${esc(p.notes)}</div>`:""}</div>${canAct()?`<button class="btn sm ghost" data-act="plan-edit" data-id="${p.id}" aria-label="Edit ${esc(p.title)}">Edit</button>`:""}</li>`;
+  return`<li class="plan${p.done?" done":""}"><input type="checkbox" id="pl-${p.id}" data-act="plan-check" data-id="${p.id}" ${p.done?"checked":""} ${canAct()?"":"disabled"}><div class="grow"><label class="title" for="pl-${p.id}">${esc(p.title)}</label><div class="sub parts">${showDate?`<span${late?' class="plan-late"':""}>${late?"Overdue: ":""}${longd(p.date)}</span>`:""}${p.time?`<span>${fmtTime(p.time)}</span>`:""}${p.series?`<span>Repeats</span>`:""}${tg.length?`<span>For ${tg.map(t=>esc(t===me.id?"you":nameOf(t))).join(", ")}</span>`:""}<span>Added by ${esc(p.by===me.id?"you":p.byName||nameOf(p.by))}</span>${p.done&&p.doneBy?`<span>Checked off by ${esc(p.doneBy===me.id?"you":nameOf(p.doneBy))}</span>`:""}</div>${p.notes?`<div class="plan-notes">${esc(p.notes)}</div>`:""}</div>${canAct()?`<button class="btn sm ghost" data-act="plan-edit" data-id="${p.id}" aria-label="Edit ${esc(p.title)}">Edit</button>`:""}</li>`;
 }
 function planner(){
   const m=planCursor,start=addDays(m,-m.getDay()),days=[];for(let i=0;i<42;i++)days.push(addDays(start,i));
@@ -3564,19 +3564,47 @@ function planner(){
   ${dayEvs.length?`<p class="sub plan-evs"><b>Also on the school calendar:</b> ${dayEvs.map(e=>esc(e.title)+(e.time?" at "+fmtTime(e.time):"")).join(", ")}</p>`:""}</section>
   <section class="panel"><h2>Still to do</h2>${open.length?`<ul class="list plans">${open.map(p=>planItem(p,true)).join("")}</ul>`:`<p class="sub" style="margin:10px 0 0">Nothing else open in the next two weeks.</p>`}</section>`;
 }
+/* Repeating items: each date is its own checklist item (so each one can be checked off), sharing series:<id>.
+   Only the first date notifies tagged people; the rest carry quiet:true so the Inbox and email aren't flooded. */
+const PLAN_REPEAT=[["","Doesn't repeat"],["w1","Every week"],["w2","Every other week"],["m1","Every month (same date)"]];
+function planDates(from,rep,until){const out=[from];if(!rep||!until||until<=from)return out;
+  const d=parse(from),day=d.getDate();
+  for(let i=1;out.length<120;i++){let k;
+    if(rep[0]==="w"){const x=addDays(parse(from),7*(+rep[1])*i);k=iso(x)}
+    else{const x=new Date(d.getFullYear(),d.getMonth()+i,day);if(x.getDate()!==day){if(iso(x)>until)break;continue}k=iso(x)}
+    if(k>until)break;out.push(k)}
+  return out}
 function planForm(id,preset={}){
   const doc=id&&S.plans.find(x=>x.id===id),people=roster().map(x=>[x.id,x.id===me.id?x.name+" (you)":x.name]);
   if(isPres&&me.id&&!people.some(([k])=>k===me.id))people.unshift([me.id,(myName()||"President")+" (you)"]);
-  openForm({title:doc?"Edit calendar item":"Add to the council calendar",values:doc||{tags:[],...preset},
-    fields:[{id:"title",label:"What needs to happen",required:true,full:true},{id:"date",label:"Date",type:"date",required:true},{id:"time",label:"Time (optional)",type:"time"},{id:"tags",label:"Tag council members",type:"people",options:people,help:"Tagged members see it in their notifications and get an email, plus a reminder when it's due."},{id:"notes",label:"Notes",type:"textarea"}],
-    submit:v=>{const now=new Date().toISOString(),old=doc?doc.tags||[]:[],fresh=v.tags.filter(t=>!old.includes(t)&&t!==me.id);
+  const later=doc&&doc.series?S.plans.filter(x=>x.series===doc.series&&x.id!==doc.id&&x.date>=doc.date):[];
+  const yEnd=(schoolYear(TODAY)+1)+"-06-15";
+  const fields=[{id:"title",label:"What needs to happen",required:true,full:true},{id:"date",label:doc?"Date":"Date (first one, if it repeats)",type:"date",required:true},{id:"time",label:"Time (optional)",type:"time"}];
+  if(!doc)fields.push({id:"repeat",label:"Repeats",type:"select",options:PLAN_REPEAT},{id:"until",label:"Repeat until",type:"date"});
+  fields.push({id:"tags",label:"Tag council members",type:"people",options:people,help:"Tagged members see it in their notifications and get an email, plus a reminder when it's due."},{id:"notes",label:"Notes",type:"textarea"});
+  if(later.length)fields.push({id:"all",label:`Also apply to the ${later.length} later date${later.length===1?"":"s"} in this series (edits and Delete)`,type:"checkbox",full:true});
+  openForm({title:doc?"Edit calendar item":"Add to the council calendar",values:doc||{tags:[],until:yEnd,...preset},
+    note:doc&&doc.series?`This repeats. ${later.length?"Tick the box at the bottom to change every later date too.":"This is the last date in its series."}`:"",
+    fields,
+    submit:async v=>{const now=new Date().toISOString(),old=doc?doc.tags||[]:[],fresh=v.tags.filter(t=>!old.includes(t)&&t!==me.id);
       const notify=[...new Set([...(doc&&doc.mail?doc.notify||[]:[]).filter(t=>v.tags.includes(t)),...fresh])];
       const data={title:v.title,date:v.date,time:v.time,notes:v.notes,tags:v.tags,notify,mail:notify.length>0};
       if(fresh.length)data.taggedAt=Object.fromEntries(fresh.map(t=>[t,now]));
       planDay=v.date;planCursor=monthOf(v.date);
-      return doc?save(()=>col("plans").doc(id).update(data),"Saved",["edited","calendar item",v.title])
-        :save(()=>col("plans").add({...data,by:me.id,byName:myName(),created:now,done:false}),fresh.length?"Added. Tagged members will be notified.":"Added to the calendar",["added","calendar item",v.title])},
-    onDelete:doc?()=>save(()=>col("plans").doc(id).delete(),"Deleted",["deleted","calendar item",doc.title]):null});
+      if(doc){const rest={title:v.title,time:v.time,notes:v.notes,tags:v.tags};
+        return save(async()=>{await col("plans").doc(id).update(data);if(v.all)await Promise.all(later.map(x=>col("plans").doc(x.id).update(rest)))},
+          v.all?`Saved ${later.length+1} dates`:"Saved",["edited","calendar item",v.title])}
+      if(v.repeat&&!v.until){$("#merr").textContent="Pick a date for it to repeat until.";return false}
+      const dates=planDates(v.date,v.repeat,v.until);
+      if(v.repeat&&dates.length<2){$("#merr").textContent="The repeat-until date is too soon for a second date. Pick a later one.";return false}
+      const base={...data,by:me.id,byName:myName(),created:now,done:false};
+      if(dates.length===1)return save(()=>col("plans").add(base),fresh.length?"Added. Tagged members will be notified.":"Added to the calendar",["added","calendar item",v.title]);
+      const series="s"+Date.now().toString(36);
+      return save(()=>Promise.all(dates.map((d,i)=>col("plans").add(i?{...base,date:d,series,quiet:true,notify:[],mail:false,taggedAt:null}:{...base,series}))),
+        `Added ${dates.length} dates, through ${fmt(dates[dates.length-1],{month:"short",day:"numeric"})}`,["added",`repeating calendar item (${dates.length} dates)`,v.title])},
+    onDelete:doc?()=>{const all=$("#f-all")&&$("#f-all").checked,n=later.length+1;
+      if(all&&!confirm(`Delete all ${n} dates of “${doc.title}” from ${fmt(doc.date,{month:"short",day:"numeric"})} on?`))return false;
+      return save(()=>Promise.all([doc,...(all?later:[])].map(x=>col("plans").doc(x.id).delete())),all?`Deleted ${n} dates`:"Deleted",["deleted","calendar item",doc.title])}:null});
 }
 
 /* ---------- boot ---------- */
