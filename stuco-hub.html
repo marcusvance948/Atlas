@@ -213,6 +213,24 @@ main{padding:0;min-width:0}
 .steps span.on{background:var(--ink);color:var(--ground);border-color:var(--ink);position:relative}
 .steps span.done{color:var(--ink)}
 .tablewrap{overflow-x:auto}
+.seg.view button[aria-pressed="true"]{background:var(--ink);color:var(--ground);font-weight:700}
+.arch-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 16px}.arch-bar input{flex:1 1 260px;min-width:0}
+.arch-bar input,.arch-bar select{border:1.5px solid var(--rule);background:var(--surface);border-radius:3px;padding:8px 10px;color:var(--ink)}
+.pick .yr{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:12px 4px 4px}
+.pick .snip{font-size:13px;color:var(--muted);display:block;margin-top:2px}.pick mark,.snip mark{background:var(--warn-soft);color:var(--ink);padding:0 1px;border-radius:2px}
+.attgrid{border-collapse:separate;border-spacing:0;font-size:14px;width:auto;min-width:100%}
+.attgrid th,.attgrid td{border-bottom:1px solid var(--rule);padding:6px 4px;text-align:center;white-space:nowrap}
+.attgrid th:first-child,.attgrid td:first-child{position:sticky;left:0;background:var(--surface);z-index:1;text-align:left;padding-right:14px;min-width:170px;border-right:1px solid var(--rule)}
+.attgrid thead th{font-size:12px;color:var(--muted);font-weight:700;vertical-align:bottom}
+.attgrid thead button{border:0;background:none;color:inherit;font:inherit;cursor:pointer;line-height:1.2;padding:2px 4px;border-radius:3px}.attgrid thead button:hover{color:var(--ink);background:var(--ground)}
+.attgrid thead b{display:block;color:var(--ink);font-size:13px}
+.att-c{width:30px;height:28px;border-radius:3px;border:1px solid var(--rule);background:transparent;font-weight:800;font-size:12px;color:var(--muted);display:inline-grid;place-items:center;padding:0}
+button.att-c{cursor:pointer}button.att-c:hover{border-color:var(--ink)}
+.att-c.present{background:var(--good);color:var(--surface);border-color:transparent}.att-c.late{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.att-c.excused{background:var(--info-soft);color:var(--info);border-color:transparent}.att-c.absent{background:var(--bad);color:var(--surface);border-color:transparent}
+.attgrid .tot{border-left:1px solid var(--rule);padding:6px 10px;font-weight:700}.attgrid .pct{font-weight:800;font-size:15px;padding:6px 12px}.attgrid .pct.low{color:var(--bad)}
+.attgrid tfoot td{font-size:12px;color:var(--muted);border-bottom:0;padding-top:8px}
+.att-key{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:10px 0 0;align-items:center}.att-key span{display:inline-flex;gap:6px;align-items:center}
 table{width:100%;border-collapse:collapse;font-size:15px}
 th{text-align:left;font-size:14px;color:var(--muted);font-weight:600;padding:8px;border-bottom:1.5px solid var(--rule-strong)}
 td{padding:9px 8px;border-bottom:1px solid var(--rule);vertical-align:middle}
@@ -2791,13 +2809,23 @@ async function exportProposal(id,kind){
   if(ok&&!tpl&&canAct())log(kind==="pdf"?"exported a PDF of":"exported a Google Docs / Word copy of","proposal",p.title);
 }
 
+/* Proposals archive: every proposal ever written, grouped by school year, searchable by any word in it. */
+let propQ="",propSt="all";
+const propYear=d=>{const y=schoolYear(d||TODAY);return y+"–"+String(y+1).slice(2)};
+function propText(p){const out=[];const walk=v=>{if(typeof v==="string")out.push(v);else if(Array.isArray(v))v.forEach(walk);else if(v&&typeof v==="object")Object.values(v).forEach(walk)};walk(p);if(p.sponsor)out.push(nameOf(p.sponsor));return out.join(" \n ")}
+function propSnip(p,q){if(!q)return"";const t=propText(p).replace(/\s+/g," "),i=t.toLowerCase().indexOf(q);if(i<0||(p.title||"").toLowerCase().includes(q))return"";const a=Math.max(0,i-40),seg=t.slice(a,i+q.length+60);
+  return(a?"…":"")+esc(seg).replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"ig"),m=>`<mark>${m}</mark>`)+"…"}
 function proposals(){
-  const list=[...S.proposals].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.number||"").localeCompare(a.number||""));
+  const all=[...S.proposals].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.number||"").localeCompare(a.number||""));
+  const q=propQ.trim().toLowerCase(),list=all.filter(p=>(propSt==="all"||(p.status||"draft")===propSt)&&(!q||propText(p).toLowerCase().includes(q)));
   if(!list.find(p=>p.id===selProposal))selProposal=list[0]?.id||null;
   const p=list.find(x=>x.id===selProposal);
   if(editing)return editorHTML();
   return head("Write a proposal, move it at a meeting, and record the roll-call vote.","Proposals",`<button class="btn" data-act="export" data-id="template" data-kind="docx">Template (.docx)</button><button class="btn" data-act="export" data-id="template" data-kind="pdf">Template (PDF)</button>${addBtn("new-proposal","Write a proposal")}`)+
-  (list.length?`<div class="split"><div class="pick">${list.map(x=>`<button data-act="pick-proposal" data-id="${x.id}" aria-pressed="${x.id===selProposal}"><span class="sub">${esc(x.number||"")}</span><span class="title">${esc(x.title||"Untitled")}</span><span class="sub parts"><span>${label(P_STAGES,x.status||"draft")}</span>${x.sponsor?`<span>${esc(nameOf(x.sponsor))}</span>`:""}</span></button>`).join("")}</div>${p?proposalDetail(p):""}</div>`
+  (all.length?`<div class="arch-bar"><input id="propQ" type="search" placeholder="Search every proposal: a word, a name, a number" aria-label="Search proposals" value="${esc(propQ)}"><select id="propSt" aria-label="Stage"><option value="all">All stages</option>${P_STAGES.map(([k,l])=>`<option value="${k}" ${propSt===k?"selected":""}>${l}</option>`).join("")}</select><span class="sub">${list.length===all.length?`${all.length} proposal${all.length===1?"":"s"} in the archive`:`${list.length} of ${all.length} match`}</span></div>`:"")+
+  (list.length?`<div class="split"><div class="pick">${list.map((x,i)=>{const yr=propYear(x.date),hd=i===0||propYear(list[i-1].date)!==yr?`<div class="yr">${yr} school year</div>`:"",sn=propSnip(x,q);
+    return hd+`<button data-act="pick-proposal" data-id="${x.id}" aria-pressed="${x.id===selProposal}"><span class="sub">${esc(x.number||"")}${x.date?" · "+esc(short(x.date)):""}</span><span class="title">${esc(x.title||"Untitled")}</span><span class="sub parts"><span>${label(P_STAGES,x.status||"draft")}</span>${x.sponsor?`<span>${esc(nameOf(x.sponsor))}</span>`:""}</span>${sn?`<span class="snip">${sn}</span>`:""}</button>`}).join("")}</div>${p?proposalDetail(p):""}</div>`
+  :all.length?empty("No proposals match","Try a different word, or set the stage to All stages.")
   :empty("No proposals yet","Write one with the built-in template. It formats itself as you type, and you can download it as a PDF to send or as a .docx to keep in Google Docs.","new-proposal","Write the first proposal"));
 }
 function proposalDetail(p){
@@ -2873,16 +2901,27 @@ async function saveEditor(){
   else{const ref=col("proposals").doc();ok=await save(()=>ref.set({...data,number:nextNumber(),status:"draft",votes:{},author:me.id||null,created:new Date().toISOString()}),"Proposal saved",["wrote","proposal",data.title]);if(ok)selProposal=ref.id}
   if(ok){editing=null;$("#main").innerHTML="";render()}
 }
-document.addEventListener("input",e=>{if(e.target.id==="annQ"){annQ=e.target.value;const l=$("#annList");if(l)l.innerHTML=annList();return}if(e.target.id==="ohQ"){ohQ=e.target.value;const l=$("#ohList");if(l)l.innerHTML=ohList();return}if(e.target.id==="helpQ"){want("spaces","all");helpQ=e.target.value;const q=helpQ.trim().toLowerCase(),l=$("#helpList");if(l)l.innerHTML=helpList(S.spaces.filter(d=>d.id!==me.id&&((d.skills||[]).length||(d.activities||[]).length)).filter(d=>!q||[d.name,...(d.skills||[]),...(d.activities||[])].join(" ").toLowerCase().includes(q)));return}if(e.target.id==="oppQ"){oppQ=e.target.value;const l=$("#oppList");if(l)l.innerHTML=oppList();return}if(editing&&e.target.closest&&e.target.closest("#pform")){readEditor();const pv=$("#preview");if(pv)pv.innerHTML=docHTML(editing.d)}});
+document.addEventListener("input",e=>{if(e.target.id==="propQ"){propQ=e.target.value;return render()}if(e.target.id==="annQ"){annQ=e.target.value;const l=$("#annList");if(l)l.innerHTML=annList();return}if(e.target.id==="ohQ"){ohQ=e.target.value;const l=$("#ohList");if(l)l.innerHTML=ohList();return}if(e.target.id==="helpQ"){want("spaces","all");helpQ=e.target.value;const q=helpQ.trim().toLowerCase(),l=$("#helpList");if(l)l.innerHTML=helpList(S.spaces.filter(d=>d.id!==me.id&&((d.skills||[]).length||(d.activities||[]).length)).filter(d=>!q||[d.name,...(d.skills||[]),...(d.activities||[])].join(" ").toLowerCase().includes(q)));return}if(e.target.id==="oppQ"){oppQ=e.target.value;const l=$("#oppList");if(l)l.innerHTML=oppList();return}if(editing&&e.target.closest&&e.target.closest("#pform")){readEditor();const pv=$("#preview");if(pv)pv.innerHTML=docHTML(editing.d)}});
 
 /* attendance */
 function quorum(m){const r=m.records||{},ms=roster(),total=ms.length;let here=0;for(const x of ms)if(r[x.id]==="present"||r[x.id]==="late")here++;return{here,total,met:total>0&&here>total/2,need:Math.floor(total/2)+1}}
+/* Attendance: "All meetings" is one sheet with every meeting as a column and each member's attendance rate at the end;
+   "Take roll" is the single-meeting view. Rate = present or late, out of the meetings they were marked at, not counting excused. */
+let attView="grid";
+const ATT_NEXT={"":"present",present:"late",late:"excused",excused:"absent",absent:"present"},ATT_L={present:"P",late:"L",excused:"E",absent:"A"};
+function attStats(id,list){let rec=0,here=0;for(const m of list){const v=(m.records||{})[id];if(v&&v!=="excused"){rec++;if(v==="present"||v==="late")here++}}return{rec,here,pct:rec?Math.round(here/rec*100):null}}
+function attGrid(list){const ms=roster(),cols=[...list].sort((a,b)=>a.date.localeCompare(b.date));if(!ms.length)return`<p class="sub">Add members first, then take roll.</p>`;
+  return`<section class="panel"><div class="tablewrap"><table class="attgrid"><thead><tr><th>Member</th>${cols.map(m=>`<th><button data-act="att-open" data-id="${m.id}" title="${esc((m.title||"Council meeting")+", "+longd(m.date))}"><b>${esc(fmt(m.date,{month:"short",day:"numeric"}))}</b>${esc(fmt(m.date,{weekday:"short"}))}</button></th>`).join("")}<th class="tot">Here</th><th>Rate</th></tr></thead>
+  <tbody>${ms.map(x=>{const st=attStats(x.id,cols);return`<tr><td>${who(x.id)}<div class="sub" style="font-size:12px">${esc(x.role||"")}</div></td>${cols.map(m=>{const v=(m.records||{})[x.id]||"";return`<td>${canAct()?`<button class="att-c ${v}" data-act="mark" data-id="${m.id}" data-m="${x.id}" data-v="${ATT_NEXT[v]}" title="${esc(nameOf(x.id))}: ${v?label(ATT,v):"not marked"}. Click to change." aria-label="${esc(nameOf(x.id))}, ${esc(longd(m.date))}: ${v?label(ATT,v):"not marked"}">${ATT_L[v]||"·"}</button>`:`<span class="att-c ${v}" title="${v?label(ATT,v):"Not marked"}">${ATT_L[v]||"·"}</span>`}</td>`}).join("")}<td class="tot">${st.here}/${st.rec}</td><td class="pct ${st.pct!=null&&st.pct<75?"low":""}">${st.pct==null?"—":st.pct+"%"}</td></tr>`}).join("")}</tbody>
+  <tfoot><tr><td>Present (quorum)</td>${cols.map(m=>{const q=quorum(m);return`<td title="${q.met?"Quorum met":"No quorum"}">${q.here}/${q.total}${q.met?"":" ✕"}</td>`}).join("")}<td class="tot"></td><td></td></tr></tfoot></table></div>
+  <div class="att-key">${ATT.map(([k,l])=>`<span><span class="att-c ${k}">${ATT_L[k]}</span>${l}</span>`).join("")}<span>Rate = present or late, out of the meetings they were expected at (excused ones don't count against them). Under 75% is red.${canAct()?" Click a box to change it; click a date to open that meeting.":""}</span></div></section>`}
 function attendance(){
   const list=[...S.meetings].sort((a,b)=>b.date.localeCompare(a.date));
   if(!list.find(m=>m.id===selMeeting))selMeeting=list[0]?.id||null;
   const m=list.find(x=>x.id===selMeeting);
   return head("Take roll at each meeting. Quorum is more than half of members present.","Attendance",addBtn("add-meeting","New meeting"))+
-  (list.length?`<div class="split"><div class="pick">${list.map(x=>{const q=quorum(x);return`<button data-act="pick-meeting" data-id="${x.id}" aria-pressed="${x.id===selMeeting}"><span class="title">${esc(x.title||"Council meeting")}</span><span class="sub parts"><span>${esc(longd(x.date))}</span><span>${q.here} of ${q.total} present</span></span></button>`}).join("")}</div>${m?meetingDetail(m):""}</div>`
+  (list.length?`<div class="seg view" role="group" aria-label="View" style="margin-bottom:16px"><button data-act="att-view" data-to="grid" aria-pressed="${attView==="grid"}">All meetings</button><button data-act="att-view" data-to="roll" aria-pressed="${attView==="roll"}">Take roll</button></div>`:"")+
+  (list.length&&attView==="grid"?attGrid(list):list.length?`<div class="split"><div class="pick">${list.map(x=>{const q=quorum(x);return`<button data-act="pick-meeting" data-id="${x.id}" aria-pressed="${x.id===selMeeting}"><span class="title">${esc(x.title||"Council meeting")}</span><span class="sub parts"><span>${esc(longd(x.date))}</span><span>${q.here} of ${q.total} present</span></span></button>`}).join("")}</div>${m?meetingDetail(m):""}</div>`
   :empty("No meetings recorded","Start a meeting to take roll. The page checks quorum (more than half of members present) as you go.","add-meeting","Start a meeting"));
 }
 function meetingDetail(m){
@@ -2897,7 +2936,7 @@ function meetingDetail(m){
 }
 
 /* members */
-function attRate(id){let rec=0,here=0;for(const m of S.meetings){const v=(m.records||{})[id];if(v){rec++;if(v==="present"||v==="late")here++}}return rec?Math.round(here/rec*100)+"%":"—"}
+function attRate(id){const st=attStats(id,S.meetings);return st.pct==null?"—":st.pct+"%"}
 function members(){
   const ms=roster(),mine=myDoc();
   let joinCard="";
@@ -3218,6 +3257,8 @@ document.addEventListener("click",async e=>{
     case"add-meeting":return go("meeting",{date:TODAY,title:"General council meeting"});
     case"edit-meeting":return forms.meeting()(id);
     case"pick-meeting":selMeeting=id;return render();
+    case"att-view":attView=b.dataset.to;return render();
+    case"att-open":selMeeting=id;attView="roll";return render();
     case"mark":{const m=S.meetings.find(x=>x.id===id);return save(()=>col("meetings").doc(id).update({records:{[b.dataset.m]:b.dataset.v}}),null,[`marked ${nameOf(b.dataset.m)} ${label(ATT,b.dataset.v).toLowerCase()} at`,"meeting",m&&m.title])}
     case"all-present":{const r={},m=S.meetings.find(x=>x.id===id);roster().forEach(x=>r[x.id]="present");return save(()=>col("meetings").doc(id).update({records:r}),"Everyone marked present",["marked everyone present at","meeting",m&&m.title])}
     case"cal-prev":calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);return render();
@@ -3226,7 +3267,7 @@ document.addEventListener("click",async e=>{
     case"sample":b.disabled=true;return loadSample();
   }
 });
-document.addEventListener("change",e=>{if(e.target.id==="roomDate"){roomDate=e.target.value||TODAY;render();return}if(e.target.id==="annTag"){annTag=e.target.value;const l=$("#annList");if(l)l.innerHTML=annList();return}if(e.target.id==="ohDay"){ohDay=e.target.value;const l=$("#ohList");if(l)l.innerHTML=ohList();return}
+document.addEventListener("change",e=>{if(e.target.id==="roomDate"){roomDate=e.target.value||TODAY;render();return}if(e.target.id==="propSt"){propSt=e.target.value;return render()}if(e.target.id==="annTag"){annTag=e.target.value;const l=$("#annList");if(l)l.innerHTML=annList();return}if(e.target.id==="ohDay"){ohDay=e.target.value;const l=$("#ohList");if(l)l.innerHTML=ohList();return}
   if(e.target.id==="rosterOnly"){const on=e.target.checked;save(()=>cfgSet(c=>{c.rosterOnly=on}),on?"Only listed emails can join now":"Anyone who signs in can join now");return}
   if(e.target.id==="sugFilter"){sugFilter=e.target.value;render()}
   if(e.target.dataset&&e.target.dataset.sug){const t=e.target,x=allSuggestions().find(s=>s.key===t.dataset.key);save(()=>db.doc("suggestions/"+t.dataset.sug).update({items:{[t.dataset.key]:{status:t.value,reviewedBy:me.id,reviewedAt:new Date().toISOString()}}}),"Status updated",["marked as "+label(SUG_STATUS,t.value).toLowerCase()+":","suggestion",x&&x.title])}
