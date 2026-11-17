@@ -1,6 +1,6 @@
 // Student Hub service worker. Network first for the page; cached copy only when offline.
 // Firebase and Google requests are never cached.
-const CACHE = "hub-85689368ba";
+const CACHE = "hub-6fb9b1d386";
 const SHELL = ["./", "firebase-config.js", "firebase-adapter.js", "icons/icon-192.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

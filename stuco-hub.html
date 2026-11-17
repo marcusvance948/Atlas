@@ -227,9 +227,11 @@ main{padding:0;min-width:0}
 .att-c{width:30px;height:28px;border-radius:3px;border:1px solid var(--rule);background:transparent;font-weight:800;font-size:12px;color:var(--muted);display:inline-grid;place-items:center;padding:0}
 button.att-c{cursor:pointer}button.att-c:hover{border-color:var(--ink)}
 .att-c.present{background:var(--good);color:var(--surface);border-color:transparent}.att-c.late{background:var(--warn-soft);color:var(--warn);border-color:transparent}
-.att-c.excused{background:var(--info-soft);color:var(--info);border-color:transparent}.att-c.absent{background:var(--bad);color:var(--surface);border-color:transparent}
+.att-c.na{background:var(--ground);color:var(--muted);border:1px dashed var(--rule);font-size:9.5px;letter-spacing:-.02em}
+.attgrid th.future,.attgrid td.future{opacity:.55}.attgrid th.future b::after{content:" ·";}.att-c.absent{background:var(--bad);color:var(--surface);border-color:transparent}
 .attgrid .tot{border-left:1px solid var(--rule);padding:6px 10px;font-weight:700}.attgrid .pct{font-weight:800;font-size:15px;padding:6px 12px}.attgrid .pct.low{color:var(--bad)}
 .attgrid tfoot td{font-size:12px;color:var(--muted);border-bottom:0;padding-top:8px}
+.linkbtn{border:0;background:none;padding:0;color:var(--info);font:inherit;font-size:12px;cursor:pointer;text-decoration:underline}
 .att-key{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:10px 0 0;align-items:center}.att-key span{display:inline-flex;gap:6px;align-items:center}
 table{width:100%;border-collapse:collapse;font-size:15px}
 th{text-align:left;font-size:14px;color:var(--muted);font-weight:600;padding:8px;border-bottom:1.5px solid var(--rule-strong)}
@@ -240,7 +242,7 @@ td{padding:9px 8px;border-bottom:1px solid var(--rule);vertical-align:middle}
 .seg button:not(:disabled):hover{color:var(--ink)}
 .seg button[aria-pressed="true"].present,.seg button[aria-pressed="true"].aye{background:var(--good);color:var(--surface);font-weight:700}
 .seg button[aria-pressed="true"].late,.seg button[aria-pressed="true"].abstain{background:var(--warn-soft);color:var(--warn);font-weight:700}
-.seg button[aria-pressed="true"].excused{background:var(--info-soft);color:var(--info);font-weight:700}
+.seg button[aria-pressed="true"].na{background:var(--ground);color:var(--ink);font-weight:700}
 .seg button[aria-pressed="true"].absent,.seg button[aria-pressed="true"].nay{background:var(--bad);color:var(--surface);font-weight:700}
 .seg button:disabled{cursor:default}
 .tally{display:flex;gap:30px;flex-wrap:wrap}
@@ -1027,7 +1029,8 @@ const POST_TAGS=[["Announcement","Announcement"],["Event","Event"],["Reminder","
 const P_STAGES=[["draft","Draft"],["moved","Moved"],["seconded","Seconded"],["voting","Vote open"],["passed","Passed"],["failed","Failed"]];
 const ROLES=["President","Vice President","Secretary","Treasurer","Historian","Class Representative","Committee Chair","Member","Advisor"];
 const COMMITTEES=["Events","Spirit","Fundraising","Communications","Service"];
-const ATT=[["present","Present"],["late","Late"],["excused","Excused"],["absent","Absent"]];
+const ATT=[["present","Present"],["late","Late"],["absent","Absent"],["na","N/A"]];/* N/A: not elected yet, or not expected at that meeting. Old "excused" marks count as N/A. */
+const attV=(m,id)=>{const v=((m&&m.records)||{})[id]||"";return v==="excused"?"na":v};
 const VOTES=[["aye","Aye"],["nay","Nay"],["abstain","Abstain"]];
 const PALETTE=["#2446C7","#B4442F","#1C8250","#8A4FBF","#9A6500","#0F7C8C","#C2407A","#5A6B2E"];
 const KINDS=[["all","Everything"],["task","Tasks"],["proposal","Proposals"],["event","Calendar"],["post","Bulletin"],["meeting","Attendance"],["member","Members"],["suggestion","Suggestions"],["album","Photos"],["story","Stories"],["opportunity","Opportunities"],["poll","Polls"]];
@@ -2904,34 +2907,77 @@ async function saveEditor(){
 document.addEventListener("input",e=>{if(e.target.id==="propQ"){propQ=e.target.value;return render()}if(e.target.id==="annQ"){annQ=e.target.value;const l=$("#annList");if(l)l.innerHTML=annList();return}if(e.target.id==="ohQ"){ohQ=e.target.value;const l=$("#ohList");if(l)l.innerHTML=ohList();return}if(e.target.id==="helpQ"){want("spaces","all");helpQ=e.target.value;const q=helpQ.trim().toLowerCase(),l=$("#helpList");if(l)l.innerHTML=helpList(S.spaces.filter(d=>d.id!==me.id&&((d.skills||[]).length||(d.activities||[]).length)).filter(d=>!q||[d.name,...(d.skills||[]),...(d.activities||[])].join(" ").toLowerCase().includes(q)));return}if(e.target.id==="oppQ"){oppQ=e.target.value;const l=$("#oppList");if(l)l.innerHTML=oppList();return}if(editing&&e.target.closest&&e.target.closest("#pform")){readEditor();const pv=$("#preview");if(pv)pv.innerHTML=docHTML(editing.d)}});
 
 /* attendance */
-function quorum(m){const r=m.records||{},ms=roster(),total=ms.length;let here=0;for(const x of ms)if(r[x.id]==="present"||r[x.id]==="late")here++;return{here,total,met:total>0&&here>total/2,need:Math.floor(total/2)+1}}
+function quorum(m){const ms=roster().filter(x=>attV(m,x.id)!=="na"),total=ms.length;let here=0;for(const x of ms){const v=attV(m,x.id);if(v==="present"||v==="late")here++}return{here,total,met:total>0&&here>total/2,need:Math.floor(total/2)+1}}
 /* Attendance: "All meetings" is one sheet with every meeting as a column and each member's attendance rate at the end;
-   "Take roll" is the single-meeting view. Rate = present or late, out of the meetings they were marked at, not counting excused. */
+   "Take roll" is the single-meeting view. Rate = present or late, out of the meetings they were marked at; N/A and unmarked don't count. */
 let attView="grid";
-const ATT_NEXT={"":"present",present:"late",late:"excused",excused:"absent",absent:"present"},ATT_L={present:"P",late:"L",excused:"E",absent:"A"};
-function attStats(id,list){let rec=0,here=0;for(const m of list){const v=(m.records||{})[id];if(v&&v!=="excused"){rec++;if(v==="present"||v==="late")here++}}return{rec,here,pct:rec?Math.round(here/rec*100):null}}
+const ATT_NEXT={"":"present",present:"late",late:"absent",absent:"na",na:"present"},ATT_L={present:"P",late:"L",absent:"A",na:"N/A"};
+function attStats(id,list){let rec=0,here=0;for(const m of list){const v=attV(m,id);if(v&&v!=="na"){rec++;if(v==="present"||v==="late")here++}}return{rec,here,pct:rec?Math.round(here/rec*100):null}}
+/* Add meetings in bulk: pick a weekday (Thursday by default), how often, and a date range; every matching date is listed
+   with a checkbox, so you untick holidays before adding. Dates that already have a meeting are skipped. */
+const WEEKDAYS=[[1,"Monday"],[2,"Tuesday"],[3,"Wednesday"],[4,"Thursday"],[5,"Friday"]];
+function seriesDates(dow,every,from,to){const out=[];if(!from||!to||from>to)return out;const d=parse(from);while(d.getDay()!==dow)d.setDate(d.getDate()+1);for(;iso(d)<=to&&out.length<120;d.setDate(d.getDate()+7*every))out.push(iso(d));return out}
+function meetingSeries(){const m=$("#modal"),yEnd=(schoolYear(TODAY)+1)+"-06-15";
+  m.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="msT" style="width:min(620px,100%)"><h2 id="msT">Add meetings</h2>
+  <div class="fields"><div class="field full"><label for="ms-title">Meeting name</label><input id="ms-title" value="General council meeting"></div>
+  <div class="field"><label for="ms-dow">Day</label><select id="ms-dow">${WEEKDAYS.map(([k,l])=>`<option value="${k}" ${k===4?"selected":""}>${l}</option>`).join("")}</select></div>
+  <div class="field"><label for="ms-every">How often</label><select id="ms-every"><option value="1">Every week</option><option value="2">Every other week</option></select></div>
+  <div class="field"><label for="ms-from">From</label><input id="ms-from" type="date" value="${TODAY}"></div><div class="field"><label for="ms-to">Until</label><input id="ms-to" type="date" value="${yEnd}"></div>
+  <div class="field"><label for="ms-time">Time (optional)</label><input id="ms-time" type="time" value="15:45"></div></div>
+  <div style="display:flex;align-items:center;gap:10px;margin:16px 0 8px"><b id="ms-count"></b><span class="sp"></span><button type="button" class="btn sm ghost" id="ms-all">Select all</button><button type="button" class="btn sm ghost" id="ms-none">Clear</button></div>
+  <div id="ms-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 12px;max-height:260px;overflow:auto;border:1px solid var(--rule);border-radius:4px;padding:10px"></div>
+  <div class="err" id="merr"></div><div class="mactions"><span class="sp"></span><button type="button" class="btn ghost" id="ms-cancel">Cancel</button><button type="button" class="btn primary" id="ms-go">Add meetings</button></div></div>`;
+  m.hidden=false;const have=new Set(S.meetings.map(x=>x.date)),off=new Set();
+  const draw=()=>{const ds=seriesDates(+$("#ms-dow").value,+$("#ms-every").value,$("#ms-from").value,$("#ms-to").value);
+    $("#ms-list").innerHTML=ds.length?ds.map(d=>`<label style="display:flex;gap:6px;align-items:center;font-size:14px;${have.has(d)?"color:var(--muted)":""}"><input type="checkbox" value="${d}" ${have.has(d)?"disabled":off.has(d)?"":"checked"}>${esc(fmt(d,{weekday:"short",month:"short",day:"numeric"}))}${have.has(d)?" (already on)":""}</label>`).join(""):`<span class="sub">No dates in that range.</span>`;
+    count()};
+  const picked=()=>[...m.querySelectorAll("#ms-list input:checked")].map(i=>i.value);
+  const count=()=>{const n=picked().length;$("#ms-count").textContent=n+" meeting"+(n===1?"":"s")+" selected";$("#ms-go").textContent=n?`Add ${n} meeting${n===1?"":"s"}`:"Add meetings";$("#ms-go").disabled=!n};
+  ["ms-dow","ms-every","ms-from","ms-to"].forEach(id=>$("#"+id).addEventListener("change",draw));
+  $("#ms-list").addEventListener("change",e=>{if(e.target.checked)off.delete(e.target.value);else off.add(e.target.value);count()});
+  $("#ms-all").onclick=()=>{off.clear();draw()};$("#ms-none").onclick=()=>{m.querySelectorAll("#ms-list input:not(:disabled)").forEach(i=>{i.checked=false;off.add(i.value)});count()};
+  $("#ms-cancel").onclick=closeModal;
+  $("#ms-go").onclick=async()=>{const ds=picked(),title=($("#ms-title").value||"").trim()||"General council meeting",time=$("#ms-time").value||"";if(!ds.length)return;$("#ms-go").disabled=true;
+    const ok=await save(async()=>{for(const d of ds)await col("meetings").add({title,date:d,time,records:{},created:new Date().toISOString()})},`${ds.length} meeting${ds.length===1?"":"s"} added`,["added "+ds.length+" meetings","meeting",title]);
+    if(ok!==false)closeModal()};
+  draw();$("#ms-title").focus()}
+function meetingRemove(){const m=$("#modal"),list=[...S.meetings].sort((a,b)=>a.date.localeCompare(b.date)),marked=x=>Object.keys(x.records||{}).length;
+  m.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mrT" style="width:min(560px,100%)"><h2 id="mrT">Remove meetings</h2><p class="sub" style="margin:-6px 0 12px">Tick the meetings to delete. Their attendance is deleted too, and this can't be undone.</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button type="button" class="btn sm ghost" id="mr-up">Select upcoming</button><button type="button" class="btn sm ghost" id="mr-empty">Select ones with no attendance</button><button type="button" class="btn sm ghost" id="mr-none">Clear</button></div>
+  <div id="mr-list" style="display:flex;flex-direction:column;gap:2px;max-height:320px;overflow:auto;border:1px solid var(--rule);border-radius:4px;padding:8px 10px">${list.map(x=>`<label style="display:flex;gap:8px;align-items:center;font-size:14px;padding:3px 0"><input type="checkbox" value="${x.id}" data-date="${x.date}" data-marked="${marked(x)}"><span style="min-width:110px;font-weight:700">${esc(fmt(x.date,{weekday:"short",month:"short",day:"numeric"}))}</span><span class="sub">${esc(x.title||"Council meeting")}${marked(x)?` · ${marked(x)} marked`:x.date>TODAY?" · upcoming":""}</span></label>`).join("")}</div>
+  <div class="err" id="merr"></div><div class="mactions"><span class="sp"></span><button type="button" class="btn ghost" id="mr-cancel">Cancel</button><button type="button" class="btn danger" id="mr-go" disabled>Delete</button></div></div>`;
+  m.hidden=false;const boxes=()=>[...m.querySelectorAll("#mr-list input")],sel=()=>boxes().filter(i=>i.checked);
+  const count=()=>{const n=sel().length,go=$("#mr-go");go.disabled=!n;go.textContent=n?`Delete ${n} meeting${n===1?"":"s"}`:"Delete"};
+  $("#mr-list").addEventListener("change",count);
+  $("#mr-up").onclick=()=>{boxes().forEach(i=>{if(i.dataset.date>TODAY)i.checked=true});count()};
+  $("#mr-empty").onclick=()=>{boxes().forEach(i=>{if(i.dataset.marked==="0")i.checked=true});count()};
+  $("#mr-none").onclick=()=>{boxes().forEach(i=>i.checked=false);count()};$("#mr-cancel").onclick=closeModal;
+  $("#mr-go").onclick=async()=>{const ids=sel().map(i=>i.value);if(!ids.length)return;const withData=sel().filter(i=>i.dataset.marked!=="0").length;
+    if(withData&&!confirm(`${withData} of these meeting${withData===1?" has":"s have"} attendance recorded. Delete anyway?`))return;$("#mr-go").disabled=true;
+    const ok=await save(async()=>{for(const id of ids)await col("meetings").doc(id).delete()},`${ids.length} meeting${ids.length===1?"":"s"} removed`,["removed "+ids.length+" meetings","meeting",""]);
+    if(ok!==false)closeModal()}}
 function attGrid(list){const ms=roster(),cols=[...list].sort((a,b)=>a.date.localeCompare(b.date));if(!ms.length)return`<p class="sub">Add members first, then take roll.</p>`;
-  return`<section class="panel"><div class="tablewrap"><table class="attgrid"><thead><tr><th>Member</th>${cols.map(m=>`<th><button data-act="att-open" data-id="${m.id}" title="${esc((m.title||"Council meeting")+", "+longd(m.date))}"><b>${esc(fmt(m.date,{month:"short",day:"numeric"}))}</b>${esc(fmt(m.date,{weekday:"short"}))}</button></th>`).join("")}<th class="tot">Here</th><th>Rate</th></tr></thead>
-  <tbody>${ms.map(x=>{const st=attStats(x.id,cols);return`<tr><td>${who(x.id)}<div class="sub" style="font-size:12px">${esc(x.role||"")}</div></td>${cols.map(m=>{const v=(m.records||{})[x.id]||"";return`<td>${canAct()?`<button class="att-c ${v}" data-act="mark" data-id="${m.id}" data-m="${x.id}" data-v="${ATT_NEXT[v]}" title="${esc(nameOf(x.id))}: ${v?label(ATT,v):"not marked"}. Click to change." aria-label="${esc(nameOf(x.id))}, ${esc(longd(m.date))}: ${v?label(ATT,v):"not marked"}">${ATT_L[v]||"·"}</button>`:`<span class="att-c ${v}" title="${v?label(ATT,v):"Not marked"}">${ATT_L[v]||"·"}</span>`}</td>`}).join("")}<td class="tot">${st.here}/${st.rec}</td><td class="pct ${st.pct!=null&&st.pct<75?"low":""}">${st.pct==null?"—":st.pct+"%"}</td></tr>`}).join("")}</tbody>
-  <tfoot><tr><td>Present (quorum)</td>${cols.map(m=>{const q=quorum(m);return`<td title="${q.met?"Quorum met":"No quorum"}">${q.here}/${q.total}${q.met?"":" ✕"}</td>`}).join("")}<td class="tot"></td><td></td></tr></tfoot></table></div>
-  <div class="att-key">${ATT.map(([k,l])=>`<span><span class="att-c ${k}">${ATT_L[k]}</span>${l}</span>`).join("")}<span>Rate = present or late, out of the meetings they were expected at (excused ones don't count against them). Under 75% is red.${canAct()?" Click a box to change it; click a date to open that meeting.":""}</span></div></section>`}
+  return`<section class="panel"><div class="tablewrap"><table class="attgrid"><thead><tr><th>Member</th>${cols.map(m=>`<th class="${m.date>TODAY?"future":""}"><button data-act="att-open" data-id="${m.id}" title="${esc((m.title||"Council meeting")+", "+longd(m.date))}"><b>${esc(fmt(m.date,{month:"short",day:"numeric"}))}</b>${esc(fmt(m.date,{weekday:"short"}))}</button></th>`).join("")}<th class="tot">Here</th><th>Rate</th></tr></thead>
+  <tbody>${ms.map(x=>{const st=attStats(x.id,cols);return`<tr><td>${who(x.id)}<div class="sub" style="font-size:12px">${esc(x.role||"")}${canAct()?` · <button class="linkbtn" data-act="att-elected" data-m="${x.id}">Elected on…</button>`:""}</div></td>${cols.map(m=>{const v=attV(m,x.id);return`<td class="${m.date>TODAY?"future":""}">${canAct()?`<button class="att-c ${v}" data-act="mark" data-id="${m.id}" data-m="${x.id}" data-v="${ATT_NEXT[v]}" title="${esc(nameOf(x.id))}: ${v?label(ATT,v):"not marked"}. Click to change." aria-label="${esc(nameOf(x.id))}, ${esc(longd(m.date))}: ${v?label(ATT,v):"not marked"}">${ATT_L[v]||"·"}</button>`:`<span class="att-c ${v}" title="${v?label(ATT,v):"Not marked"}">${ATT_L[v]||"·"}</span>`}</td>`}).join("")}<td class="tot">${st.here}/${st.rec}</td><td class="pct ${st.pct!=null&&st.pct<75?"low":""}">${st.pct==null?"—":st.pct+"%"}</td></tr>`}).join("")}</tbody>
+  <tfoot><tr><td>Present (quorum)</td>${cols.map(m=>{const q=quorum(m),fut=m.date>TODAY&&!q.here;return`<td class="${fut?"future":""}" title="${fut?"Hasn't happened yet":q.met?"Quorum met":"No quorum"}">${fut?"upcoming":`${q.here}/${q.total}${q.met?"":" ✕"}`}</td>`}).join("")}<td class="tot"></td><td></td></tr></tfoot></table></div>
+  <div class="att-key">${ATT.map(([k,l])=>`<span><span class="att-c ${k}">${ATT_L[k]}</span>${l}</span>`).join("")}<span>Rate = present or late, out of the meetings they were expected at. N/A (not elected yet, or not expected) and unmarked don't count. Under 75% is red. Faded columns haven't happened yet.${canAct()?" Click a box to change it; click a date to open that meeting.":""}</span></div></section>`}
 function attendance(){
   const list=[...S.meetings].sort((a,b)=>b.date.localeCompare(a.date));
   if(!list.find(m=>m.id===selMeeting))selMeeting=list[0]?.id||null;
   const m=list.find(x=>x.id===selMeeting);
-  return head("Take roll at each meeting. Quorum is more than half of members present.","Attendance",addBtn("add-meeting","New meeting"))+
+  return head("Take roll at each meeting. Quorum is more than half of the members expected (N/A doesn't count).","Attendance",canAct()?`<button class="btn primary" data-act="meeting-series">+ Add meetings</button><button class="btn" data-act="add-meeting">One meeting</button>${list.length?`<button class="btn ghost" data-act="meeting-remove">Remove meetings</button>`:""}`:"")+
   (list.length?`<div class="seg view" role="group" aria-label="View" style="margin-bottom:16px"><button data-act="att-view" data-to="grid" aria-pressed="${attView==="grid"}">All meetings</button><button data-act="att-view" data-to="roll" aria-pressed="${attView==="roll"}">Take roll</button></div>`:"")+
   (list.length&&attView==="grid"?attGrid(list):list.length?`<div class="split"><div class="pick">${list.map(x=>{const q=quorum(x);return`<button data-act="pick-meeting" data-id="${x.id}" aria-pressed="${x.id===selMeeting}"><span class="title">${esc(x.title||"Council meeting")}</span><span class="sub parts"><span>${esc(longd(x.date))}</span><span>${q.here} of ${q.total} present</span></span></button>`}).join("")}</div>${m?meetingDetail(m):""}</div>`
-  :empty("No meetings recorded","Start a meeting to take roll. The page checks quorum (more than half of members present) as you go.","add-meeting","Start a meeting"));
+  :empty("No meetings yet","Add your regular meetings (for example every Thursday) in one go, then take roll each week.","meeting-series","Add meetings"));
 }
 function meetingDetail(m){
   const q=quorum(m),r=m.records||{},ms=roster();
-  const counts=Object.fromEntries(ATT.map(([k])=>[k,ms.filter(x=>r[x.id]===k).length]));
+  const counts=Object.fromEntries(ATT.map(([k])=>[k,ms.filter(x=>attV(m,x.id)===k).length]));
   return`<section class="panel" style="display:flex;flex-direction:column;gap:14px">
-    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><h2 style="font-size:22px">${esc(m.title||"Council meeting")}</h2><div class="sub" style="margin-top:4px">${esc(longd(m.date))}${m.notes?`. ${esc(m.notes)}`:""}</div></div><div class="toolbar">${canAct()?`<button class="btn sm" data-act="all-present" data-id="${m.id}">Mark everyone present</button><button class="btn sm ghost" data-act="edit-meeting" data-id="${m.id}">Edit</button>`:""}</div></div>
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><h2 style="font-size:22px">${esc(m.title||"Council meeting")}</h2><div class="sub" style="margin-top:4px">${esc(longd(m.date))}${m.notes?`. ${esc(m.notes)}`:""}</div></div><div class="toolbar">${canAct()?`<button class="btn sm" data-act="all-present" data-id="${m.id}">Mark everyone present (except N/A)</button><button class="btn sm ghost" data-act="edit-meeting" data-id="${m.id}">Edit</button>`:""}</div></div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="chip ${q.met?"good":"bad"}">${q.met?"Quorum met":"No quorum"}</span><span class="sub">${q.here} of ${q.total} here. ${q.need} needed for quorum.</span></div>
     <div class="summary">${ATT.map(([k,l])=>`<span>${l} <b>${counts[k]}</b></span>`).join("")}<span>Not marked <b>${ms.length-Object.values(counts).reduce((a,b)=>a+b,0)}</b></span></div>
-    ${ms.length?`<div class="tablewrap"><table><thead><tr><th>Member</th><th>Role</th><th>Status</th></tr></thead><tbody>${ms.map(x=>`<tr><td>${who(x.id)}</td><td class="sub">${esc(x.role||"")}${x.grade?`, grade ${esc(x.grade)}`:""}</td><td><div class="seg">${ATT.map(([k,l])=>`<button class="${k}" aria-pressed="${r[x.id]===k}" data-act="mark" data-id="${m.id}" data-m="${x.id}" data-v="${k}" ${canAct()?"":"disabled"}>${l}</button>`).join("")}</div></td></tr>`).join("")}</tbody></table></div>`:`<p class="sub">Add members first, then take roll here.</p>`}
+    ${ms.length?`<div class="tablewrap"><table><thead><tr><th>Member</th><th>Role</th><th>Status</th></tr></thead><tbody>${ms.map(x=>`<tr><td>${who(x.id)}</td><td class="sub">${esc(x.role||"")}${x.grade?`, grade ${esc(x.grade)}`:""}</td><td><div class="seg">${ATT.map(([k,l])=>`<button class="${k}" aria-pressed="${attV(m,x.id)===k}" data-act="mark" data-id="${m.id}" data-m="${x.id}" data-v="${k}" ${canAct()?"":"disabled"}>${l}</button>`).join("")}</div></td></tr>`).join("")}</tbody></table></div>`:`<p class="sub">Add members first, then take roll here.</p>`}
   </section>`;
 }
 
@@ -3258,9 +3304,15 @@ document.addEventListener("click",async e=>{
     case"edit-meeting":return forms.meeting()(id);
     case"pick-meeting":selMeeting=id;return render();
     case"att-view":attView=b.dataset.to;return render();
+    case"meeting-series":return meetingSeries();
+    case"att-elected":{const mid=b.dataset.m;return openForm({title:"When was "+nameOf(mid)+" elected?",submitLabel:"Mark N/A before this date",note:"Every meeting before this date is marked N/A for them, so it doesn't count against their rate. Meetings on or after it aren't changed.",
+      fields:[{id:"date",label:"First meeting they should be at",type:"date",required:true}],values:{date:TODAY},
+      submit:v=>{const ms=S.meetings.filter(m=>m.date<v.date);if(!ms.length){$("#merr").textContent="There are no meetings before that date.";return false}
+        return save(async()=>{for(const m of ms)await col("meetings").doc(m.id).update({records:{[mid]:"na"}})},`Marked N/A at ${ms.length} earlier meeting${ms.length===1?"":"s"}`,["marked N/A before "+v.date+" for","member",nameOf(mid)])}})}
+    case"meeting-remove":return meetingRemove();
     case"att-open":selMeeting=id;attView="roll";return render();
     case"mark":{const m=S.meetings.find(x=>x.id===id);return save(()=>col("meetings").doc(id).update({records:{[b.dataset.m]:b.dataset.v}}),null,[`marked ${nameOf(b.dataset.m)} ${label(ATT,b.dataset.v).toLowerCase()} at`,"meeting",m&&m.title])}
-    case"all-present":{const r={},m=S.meetings.find(x=>x.id===id);roster().forEach(x=>r[x.id]="present");return save(()=>col("meetings").doc(id).update({records:r}),"Everyone marked present",["marked everyone present at","meeting",m&&m.title])}
+    case"all-present":{const r={},m=S.meetings.find(x=>x.id===id);roster().forEach(x=>{if(attV(m,x.id)!=="na")r[x.id]="present"});return save(()=>col("meetings").doc(id).update({records:r}),"Everyone marked present",["marked everyone present at","meeting",m&&m.title])}
     case"cal-prev":calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);return render();
     case"cal-next":calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+1,1);return render();
     case"cal-today":calCursor=firstOfMonth(new Date());return render();
@@ -3304,7 +3356,7 @@ async function loadSample(){
     for(const p of[{title:"Spirit Week themes are here",tag:"Spirit",date:d(0),author:ids[0],pinned:true,body:"Monday: Pajama Day\nTuesday: Decades Day\nWednesday: Jersey Day\nThursday: Twin Day\nFriday: School Colors"},{title:"Bake sale volunteers needed",tag:"Opportunity",date:d(-2),author:ids[2],body:"Sign up with any council member to bake or work a shift. Proceeds go to the winter formal."}])await col("bulletin").add({...p,sample:true});
     const yy=String(new Date().getFullYear()).slice(2);
     await col("proposals").add({number:`P-${yy}-01`,title:"Water bottle filling station by the gym",sponsor:ids[3],cosponsors:"Ava Brooks, Sam Ortiz",committee:"Service",budget:[{item:"Filling station unit",cost:950},{item:"Installation by district facilities",cost:250}],date:d(-6),status:"voting",summary:"Fund one water bottle filling station outside the gym from the council budget.",background:"Students fill bottles at the gym fountain, which is slow and often broken. In our October survey, 212 of 340 students said they skip refilling during PE.",action:"The Treasurer will request a quote from district facilities and place the order. Facilities installs it over winter break.",timeline:"Dec 1: order placed\nDec 22 – Jan 2: installation\nJan 10: report back to council",impact:"Fewer plastic bottles bought at the student store, and students stay hydrated during PE and practice.",resolution:"BE IT RESOLVED that the Student Council approves up to $1,200 from the general fund to purchase and install one water bottle filling station outside the gym.",votes:{[ids[0]]:"aye",[ids[1]]:"aye",[ids[2]]:"nay"},sample:true});
-    await col("meetings").add({title:"General council meeting",date:d(-2),records:{[ids[0]]:"present",[ids[1]]:"late",[ids[2]]:"present",[ids[3]]:"absent",[ids[4]]:"excused"},sample:true});
+    await col("meetings").add({title:"General council meeting",date:d(-2),records:{[ids[0]]:"present",[ids[1]]:"late",[ids[2]]:"present",[ids[3]]:"absent",[ids[4]]:"na"},sample:true});
   },"Sample council loaded. Edit or delete anything.",["loaded the sample council","settings",""]);
   if(!ok)render();
 }
