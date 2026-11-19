@@ -75,6 +75,14 @@ git push origin main "${SPLIT}:refs/heads/pages"   # owner only; force-push is b
 - **Instagram (@avenuesed):** not automated. Instagram has no public feed access; it needs a token from the account owner (the school's communications team) through Meta's Instagram API.
 - **Data per person** lives in `<collection>/<uid>` documents with an `items` map (suggestions, signups, lostfound, bookings, gamevotes, replies…), written only by that person.
 
+## Permissions by position
+
+- The president sets **Who can do what** on the Members page (`permsPanel`): one row per position, one column per area in `CAPS`. Saved as `config/access.perms = {position: [caps]}`. A position with no saved row gets `DEFAULT_CAPS` (everything except `tasks`). The president always has everything.
+- A member's position is `CFG.roles[uid]`, else the roster row's `role` (StuCo column), else `Member` (`myRole()`; `roleOf()` in the rules).
+- UI: `AREAS` (just before boot) maps view functions to an area. While one of them draws, `canAct()` also requires `capOK(area)`. A new council button inside an unlisted function only needs council, so add new views to `AREAS`. Task assignment checks `capOK("tasks")` directly.
+- Server: `hasCap()` in `firestore.rules` guards each collection the same way. Keep the default list there in sync with `DEFAULT_CAPS`.
+- The claude.ai artifact can't express per-position rules; there the grid only hides buttons.
+
 ## Testing approach that works
 
 Serve a copy locally (`python3 -m http.server`), add a doctype/viewport wrapper, open it in the browser pane, stub `db` with an in-memory object, set `me`/`isPres`/`CFG`/`S.*`, and render every route in both modes. Syntax-check the script with `osascript -l JavaScript` and `new Function(src)`.
