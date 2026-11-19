@@ -3091,6 +3091,8 @@ function meetingDetail(m){
 
 /* members */
 function attRate(id){const st=attStats(id,S.meetings);return st.pct==null?"—":st.pct+"%"}
+function invitedHTML(){if(!canAct())return"";const inv=S.roster.filter(d=>d.council&&d.invitedAt&&!d.uid&&(!isPres||(ADMIN.emails||[]).includes(d.id)));if(!inv.length)return"";
+  return`<section class="panel"><h2>Invited, not signed in yet</h2><ul class="list">${inv.map(d=>`<li><span class="avatar lg" style="background:var(--muted)">${esc(initials(d.name))}</span><div class="grow"><div class="title">${esc(d.name||d.id)}</div><div class="sub">${esc(d.role||"Member")}${d.grade?`, Grade ${esc(d.grade)}`:""}${isPres?` · ${esc(d.id)}`:""}</div></div>${isPres?`<button class="btn sm ghost danger" data-act="uninvite" data-id="${esc(d.id)}">Remove</button>`:""}</li>`).join("")}</ul></section>`}
 function members(){
   const ms=roster(),mine=myDoc();
   let joinCard="";
@@ -3100,7 +3102,7 @@ function members(){
     else if(!isApproved(mine))joinCard=`<div class="banner">Your profile is waiting for approval. If your email is on the president's approved list, it goes through automatically the next time the president opens the site.</div>`;
   }
   return head("","Members",(mine&&amMember()?`<button class="btn" data-act="edit-profile">Edit my profile</button>`:"")+(isPres&&W()?`${mine?"":`<button class="btn" data-act="join">Create my profile</button>`}<button class="btn primary" data-act="add-member">+ Add member without an account</button>`:""))+
-  joinCard+(isPres&&W()?presPanel():"")+
+  joinCard+invitedHTML()+(isPres&&W()?presPanel():"")+
   (ms.length?`<div class="people">${ms.map(m=>`<article class="person ${m.id===me.id?"me-card":""}"><div class="top">${avatar(m.id,"xl")}<div class="grow"><div class="title" style="font-size:17px">${esc(m.name)}${m.id===me.id?' <span class="muted" style="font-weight:400">(you)</span>':""}</div><div><span class="chip ${m.role==="President"?"accent":""}">${esc(m.role)}</span></div><div class="sub" style="margin-top:4px">${[m.grade?"Grade "+m.grade:"",m.committee].filter(Boolean).map(esc).join(", ")}</div></div></div>${m.bio?`<p>${esc(m.bio)}</p>`:""}<div class="stats"><span>Open tasks <b>${S.tasks.filter(t=>{const s=taskState(t);return s.owner===m.id&&s.status!=="done"}).length}</b></span><span>Attendance <b>${attRate(m.id)}</b></span>${m.manual?"<span>No account</span>":""}</div>${isPres&&W()?`<div><button class="btn sm ghost" data-act="edit-member" data-id="${m.id}">Edit</button></div>`:m.id===me.id?`<div><button class="btn sm ghost" data-act="edit-profile">Edit my profile</button></div>`:""}</article>`).join("")}</div>`
   :empty("No members yet",isPres?"Create your own profile, list your members' email addresses below, then share the page with them.":"Council members appear here once the president approves them.",isPres?"join":null,"Create my profile",isPres&&W()));
 }
@@ -3138,6 +3140,10 @@ async function syncGrants(){
   }catch(err){grantFailed=true;toast("Couldn't update council access from your email list. Reload and try again.")}
   finally{grantBusy=false}
 }
+/* someone the president added by email gets a member profile made from their student-list row the first time they sign in */
+let autoProfDone=false;
+function autoProfile(){const r=RM();if(autoProfDone||isPres||!me.id||!db||!W()||!r||!r.council||!loaded.has("members")||myDoc())return;autoProfDone=true;
+  db.doc("members/"+me.id).set({name:r.name||me.name||"",grade:r.grade||"",role:r.role||"Member",bio:"",created:new Date().toISOString()}).catch(()=>{autoProfDone=false})}
 async function autoApprove(){
   if(!isPres||!U||!db||!loaded.has("admin")||!loaded.has("config")||!loaded.has("members"))return;
   const emails=[...(ADMIN.emails||[]).map(e=>e.toLowerCase()),...S.roster.filter(d=>d.council).map(d=>d.id)];if(!emails.length)return;
@@ -3146,7 +3152,7 @@ async function autoApprove(){
   const ps=await U.profiles(pend.map(d=>d.id));Object.assign(PROF,ps);
   const ok=pend.filter(d=>{const e=(ps[d.id]&&ps[d.id].email||"").toLowerCase();return e&&emails.includes(e)});
   if(!ok.length){render();return}
-  const roles={};for(const d of ok){const e=(ps[d.id]&&ps[d.id].email||"").toLowerCase();try{const r=await db.doc("roster/"+e).get(),x=r.exists?r.data():null;if(x&&x.role&&ROLES.includes(x.role))roles[d.id]=x.role}catch(err){}}
+  const roles={};for(const d of ok){const e=(ps[d.id]&&ps[d.id].email||"").toLowerCase();try{const r=await db.doc("roster/"+e).get(),x=r.exists?r.data():null;if(x&&x.role)roles[d.id]=String(x.role).slice(0,60);if(x&&x.invitedAt&&!x.uid)await db.doc("roster/"+e).set({...x,uid:d.id})}catch(err){}}
   const roleOf=d=>roles[d.id]||"";
   if(await save(()=>cfgSet(c=>ok.forEach(d=>{c.approved[d.id]=true;const r=roleOf(d);if(r&&!c.roles[d.id])c.roles[d.id]=r})),`${ok.length} member${ok.length>1?"s":""} approved from your email list`))ok.forEach(d=>log("approved","member",d.name));
 }
@@ -3246,10 +3252,10 @@ function joinForm(){
 }
 function memberForm(id){
   const d=id?S.members.find(x=>x.id===id):null,fm=d?full(d):null;
-  const fields=[...PROFILE_FIELDS.slice(0,3),{id:"role",label:"Role",type:"select",options:ROLES.map(r=>[r,r])},...PROFILE_FIELDS.slice(3)];
+  const fields=[...PROFILE_FIELDS.slice(0,3),{id:"role",label:"Position",required:true,list:ROLES,placeholder:"e.g. Head of Events"},...PROFILE_FIELDS.slice(3)];
   openForm({title:d?`Edit ${d.name}`:"Add member without an account",fields,values:fm||{role:"Member"},
     note:d?"":"For people who won't sign in, like your advisor. They can be marked at roll call and assigned tasks, but can't accept tasks themselves.",
-    submit:async vals=>{const{role,...rest}=vals;
+    submit:async vals=>{vals.role=String(vals.role||"").trim().slice(0,60)||"Member";const{role,...rest}=vals;
       if(d){const ok=await save(()=>db.doc("members/"+id).update(rest),"Saved",["edited","member",vals.name]);if(ok&&role!==fm.role)await save(()=>cfgSet(c=>{c.roles[id]=role}),null,["set role to "+role+" for","member",vals.name]);return ok}
       const ref=col("members").doc();const ok=await save(()=>ref.set({...rest,manual:true,created:new Date().toISOString()}),"Member added",["added","member",vals.name]);if(ok)await save(()=>cfgSet(c=>{c.roles[ref.id]=role}));return ok},
     onDelete:d&&id!==me.id?async()=>{const ok=await save(()=>db.doc("members/"+id).delete(),"Member removed",["removed","member",d.name]);if(ok)await save(()=>cfgSet(c=>{delete c.approved[id];delete c.roles[id]}));return ok}:null});
@@ -3267,6 +3273,7 @@ document.addEventListener("click",async e=>{
     case"edit-profile":return joinForm();
     case"add-member":return memberForm(null);
     case"add-council":return councilForm();
+    case"uninvite":{const em=b.dataset.id,emails=(ADMIN.emails||[]).filter(e=>e!==em);grantFailed=false;return save(()=>db.doc("admin/access").set({...ADMIN,emails}),"Invite removed",["removed the council invite for","member",em])}
     case"clear-sample":return clearSample();
     case"edit-member":return memberForm(id);
     case"approve":{const d=S.members.find(x=>x.id===id);return save(()=>cfgSet(c=>{c.approved[id]=true}),"Member approved",["approved","member",d&&d.name])}
@@ -3470,11 +3477,11 @@ document.addEventListener("click",e=>{if(e.target.id==="gallery")closeGallery();
 const SAMPLE_COLS=["members","events","tasks","bulletin","proposals","meetings"];
 /* Council by email: puts the person on the student list as StuCo (rules and the site then treat them as council as
    soon as they sign in), adds them to the approved list, and saves their role, applied when their profile is approved. */
-function councilForm(){openForm({title:"Add a council member",submitLabel:"Add",note:"They get council access as soon as they sign in with this Google account. Ask them to sign in and click <b>Create my profile</b> on the Members page so they show up with their role.",
-  fields:[{id:"email",label:"Their Google account email",required:true,full:true,placeholder:"name@gmail.com or name@avenues.org"},{id:"name",label:"Name",required:true},{id:"role",label:"Role",type:"select",options:ROLES.filter(r=>r!=="President").map(r=>[r,r])},{id:"grade",label:"Grade",type:"select",options:[["",""],...GRADES.map(g=>[g,"Grade "+g])]}],values:{role:"Member"},
-  submit:v=>{const email=(v.email||"").trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("#merr").textContent="That doesn't look like an email address.";return false}
+function councilForm(){openForm({title:"Add a council member",submitLabel:"Add",note:"They get council view as soon as they sign in with this Google account, and their member profile is made for them with this name, grade and position.",
+  fields:[{id:"email",label:"Their Google account email",required:true,full:true,placeholder:"name@gmail.com or name@avenues.org"},{id:"name",label:"Name",required:true},{id:"role",label:"Position",required:true,list:ROLES.filter(r=>r!=="President"),placeholder:"e.g. Head of Events, Grade 10 Rep"},{id:"grade",label:"Grade",type:"select",options:[["",""],...GRADES.map(g=>[g,"Grade "+g])]}],values:{role:"Member"},
+  submit:v=>{const email=(v.email||"").trim().toLowerCase();v.role=String(v.role||"").trim().slice(0,60)||"Member";if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("#merr").textContent="That doesn't look like an email address.";return false}
     const emails=[...new Set([...(ADMIN.emails||[]),email])];
-    return save(async()=>{const cur=await db.doc("roster/"+email).get(),row=cur.exists?cur.data()||{}:{};await db.doc("roster/"+email).set({...row,name:v.name||row.name||"",grade:v.grade||row.grade||"",council:true,role:v.role,clubs:row.clubs||[],...(cur.exists?{}:{extra:true})});await db.doc("admin/access").set({...ADMIN,emails});
+    return save(async()=>{const cur=await db.doc("roster/"+email).get(),row=cur.exists?cur.data()||{}:{};await db.doc("roster/"+email).set({...row,name:v.name||row.name||"",grade:v.grade||row.grade||"",council:true,role:v.role,clubs:row.clubs||[],invitedAt:new Date().toISOString(),...(cur.exists?{}:{extra:true})});await db.doc("admin/access").set({...ADMIN,emails});
       const m=S.members.find(d=>(PROF[d.id]&&(PROF[d.id].email||"").toLowerCase())===email);if(m)await cfgSet(c=>{c.approved[m.id]=true;c.roles[m.id]=v.role})},
       `${v.name} added as ${v.role}`,["added to council as "+v.role,"member",v.name])}})}
 async function clearSample(){const items=SAMPLE_COLS.flatMap(c=>S[c].filter(d=>d.sample).map(d=>[c,d.id]));if(!items.length)return;
@@ -3527,7 +3534,7 @@ function subDone(c,snap){if(!snap.metadata||!snap.metadata.fromCache)loaded.add(
 function subFail(){clearTimeout(slowTimer);setStatus("err");render()}
 /* snapshots arrive in bursts (about 25 collections at sign-in), so the page is drawn once per burst, not once per collection */
 let dataT=0,freshMembers=false;
-function dataChanged(){if(dataT)return;dataT=setTimeout(()=>{dataT=0;render();if(freshMembers){freshMembers=false;autoApprove()}settleGames();writeStats();postAuto()},16)}
+function dataChanged(){if(dataT)return;dataT=setTimeout(()=>{dataT=0;render();if(freshMembers){freshMembers=false;autoApprove()}autoProfile();settleGames();writeStats();postAuto()},16)}
 function want(c,lvl){
   if(!db||(COUNCIL_ONLY.includes(c)&&!isEditor))return;
   if(!LEAN)lvl="all";
@@ -3561,12 +3568,13 @@ const PAGE_NEEDS={
 };
 /* council: approvals, settlement and the summary need everyone's documents */
 const BASE_COUNCIL={plans:"all",submissions:"all",clubdrafts:"all",suggestions:"all",done:"all",scores:"all",picks:"all",tasks:"all",claims:"all",members:"all",games:"all",gamekeys:"all",events:"all",bulletin:"all",proposals:"all",meetings:"all"};
-const COUNCIL_PAGES={overview:{gamevotes:"all",plays:"all",signups:"all",replies:"all",history:"all"},history:{history:"all"},members:{spaces:"all"},home:{signups:"all",replies:"all",gamevotes:"all",plays:"all"},play:{gamevotes:"all",plays:"all",predictions:"all",challenges:"all"},clubs:{clubs:"all",clubposts:"all"},club:{clubs:"all",clubposts:"all",picks:"all"}};
+const COUNCIL_PAGES={overview:{gamevotes:"all",plays:"all",signups:"all",replies:"all",history:"all"},history:{history:"all"},members:{spaces:"all",roster:"all"},home:{signups:"all",replies:"all",gamevotes:"all",plays:"all"},play:{gamevotes:"all",plays:"all",predictions:"all",challenges:"all"},clubs:{clubs:"all",clubposts:"all"},club:{clubs:"all",clubposts:"all",picks:"all"}};
 function ensureData(){if(!db)return;const v=shownView()||"home",need={...BASE_STUDENT,...(PAGE_NEEDS[v]||{})};
   /* everyone's votes only on days a This or That or photo game still needs its live tally */
   if(v==="play"&&S.games.some(g=>(g.type==="versus"||g.type==="photo")&&!g.awarded&&g.id>=DAYS_AGO(2)))need.gamevotes="all";
   if(v==="myspace"&&(CFG.rooms||[]).length)need.bookings="all";
   if(council()||canCouncil())Object.assign(need,BASE_COUNCIL,council()?COUNCIL_PAGES[v]||{}:{});
+  if(isPres)need.roster="all"; // autoApprove, the student-list panel and club requests read it
   for(const[c,l]of Object.entries(need))want(c,l)}
 /* who's going to one event: only the sign-up documents that include it (Firestore indexes map fields) */
 const GOING={};
