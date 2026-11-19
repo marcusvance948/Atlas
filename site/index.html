@@ -2093,9 +2093,9 @@ function parseRoster(text){
 function rosterSummary(){const n=S.roster.length;if(!n)return"No list imported yet.";return`${n} people on the list: ${GRADES.map(g=>`${S.roster.filter(d=>d.grade===g).length} in Grade ${g}`).join(", ")}. ${S.roster.filter(d=>d.council).length} on StuCo, ${S.roster.filter(d=>(d.clubs||[]).length).length} club leaders.`}
 async function importRoster(){
   const rows=parseRoster($("#rosterPaste").value);if(!rows.length){toast("No rows with an email address found. Check that you copied the Email column.");return}
-  const bid=e=>{let h=0;for(const ch of e)h=(h*31+ch.charCodeAt(0))>>>0;return"r"+h.toString(36)},keep=new Set(rows.map(r=>r[0])),bkeep=new Set(),jobs=[];
-  for(const[email,e]of rows){jobs.push(()=>db.doc("roster/"+email).set(e));if(e.bm&&e.name){bkeep.add(bid(email));jobs.push(()=>db.doc("birthdays/"+bid(email)).set({name:e.name,month:e.bm,day:e.bd,show:true,roster:true}))}}
-  for(const d of S.roster)if(!keep.has(d.id))jobs.push(()=>db.doc("roster/"+d.id).delete());
+  const bid=e=>{let h=0;for(const ch of e)h=(h*31+ch.charCodeAt(0))>>>0;return"r"+h.toString(36)},keep=new Set(rows.map(r=>r[0])),bkeep=new Set(),jobs=[],granted=new Set((ADMIN.emails||[]).map(x=>x.toLowerCase()));  // emails the president gave council view stay, even if they are not in the sheet
+  for(const[email,e]of rows){const o=S.roster.find(d=>d.id===email);if(granted.has(email))e.council=true;if(o&&o.role)e.role=o.role;jobs.push(()=>db.doc("roster/"+email).set(e));if(e.bm&&e.name){bkeep.add(bid(email));jobs.push(()=>db.doc("birthdays/"+bid(email)).set({name:e.name,month:e.bm,day:e.bd,show:true,roster:true}))}}
+  for(const d of S.roster)if(!keep.has(d.id)){if(!granted.has(d.id))jobs.push(()=>db.doc("roster/"+d.id).delete());else if(!d.extra||!d.council){const{id,...row}=d;jobs.push(()=>db.doc("roster/"+id).set({...row,council:true,extra:true}))}}
   for(const d of S.birthdays)if(d.roster&&!bkeep.has(d.id))jobs.push(()=>db.doc("birthdays/"+d.id).delete());
   await save(async()=>{for(let i=0;i<jobs.length;i+=20){const st=$("#rosterStatus");if(st)st.textContent=`Importing ${Math.min(i+20,jobs.length)} of ${jobs.length}…`;await Promise.all(jobs.slice(i,i+20).map(j=>j()))}
     await cfgSet(c=>{c.rosterOnly=true})},`Imported ${rows.length} people`,["imported the student list","settings",rows.length+" people"]);
@@ -3111,12 +3111,32 @@ function presPanel(){
     <div class="toolbar"><button class="btn primary" data-act="add-council">+ Add council member by email</button>${nSample?`<button class="btn ghost danger" data-act="clear-sample">Remove example data (${nSample} items)</button>`:""}</div>
     ${HOSTED?`<div class="banner" style="max-width:none">Anyone can read the bulletin, calendar, events and opportunities. Students sign in with Google to sign up, vote and send suggestions. Approving someone below makes them a council member who can edit.</div>`:`<div class="banner" style="max-width:none">How to share this page: give council members <b>Editor</b> access so they can make changes. Give everyone else at Avenues <b>Viewer</b> access. They see the bulletin, calendar and tasks, and nothing else. People you add as <b>Contributor</b> can also use the suggestion box.</div>`}
     <div class="grid2">
-      <div class="field"><label for="emails">Approved member emails</label><textarea id="emails" rows="5" placeholder="one email per line">${esc((ADMIN.emails||[]).join("\n"))}</textarea><span class="sub">People who join with one of these addresses are approved automatically. This list is private to you.</span><div><button class="btn sm primary" data-act="save-emails">Save list</button></div></div>
+      <div class="field"><label for="emails">Approved member emails</label><textarea id="emails" rows="5" placeholder="one email per line">${esc((ADMIN.emails||[]).join("\n"))}</textarea><span class="sub">Anyone who signs in with one of these Google accounts gets council view right away. It doesn't have to be a school address or on the student list. Take an address off and save to remove their access. This list is private to you.</span><div><button class="btn sm primary" data-act="save-emails">Save list</button></div></div>
       <div class="field"><label for="formurl">Outside suggestion form (optional)</label><input id="formurl" value="${esc(CFG.formUrl||"")}" placeholder="https://forms.gle/…"><span class="sub">${HOSTED?"Optional: a school Google Form for students who can't sign in here.":"If students can't sign in to claude.ai, paste a link to a school Google Form."} The Suggestions page links to it.</span><div><button class="btn sm" data-act="save-form">Save link</button></div>
         <label style="margin-top:12px">Join requests</label>
         ${pend.length?`<ul class="list" style="margin:0">${pend.map(d=>{const em=PROF[d.id]&&PROF[d.id].email;return`<li>${avatar(d.id,"lg")}<div class="grow"><div class="title">${esc(d.name||"Unnamed")}</div><div class="sub">${em?esc(em):"Email not shared"}${em&&(ADMIN.emails||[]).includes(em.toLowerCase())?", on your approved list":""}</div></div><button class="btn sm good" data-act="approve" data-id="${d.id}">Approve</button><button class="btn sm ghost danger" data-act="decline" data-id="${d.id}">Decline</button></li>`}).join("")}</ul>`:`<span class="sub">No one is waiting for approval.</span>`}
       </div>
     </div>${rosterPanel()}</section>`;
+}
+/* The approved email list is what gives council view. Every address on it gets a row on the student list marked
+   StuCo, which is what the security rules and sign-in read, so it works for any Google account (a home address too)
+   and before the person has a profile. Rows made only for this are marked extra and go away when the address is
+   taken off the list. ADMIN.granted remembers what was last written. */
+let grantBusy=false,grantFailed=false;
+async function syncGrants(){
+  if(!isPres||!db||grantBusy||grantFailed||!loaded.has("admin")||!adminExists)return;
+  const emails=[...new Set((ADMIN.emails||[]).map(e=>String(e).trim().toLowerCase()).filter(e=>/^[^@\s\/]+@[^@\s\/]+\.[^@\s\/]+$/.test(e)))],done=ADMIN.granted;
+  if(done&&done.length===emails.length&&emails.every(e=>done.includes(e)))return;
+  grantBusy=true;
+  try{
+    for(const e of emails){const r=await db.doc("roster/"+e).get(),row=r.exists?r.data()||{}:null;
+      if(!row)await db.doc("roster/"+e).set({name:"",grade:"",clubs:[],council:true,extra:true});
+      else if(!row.council)await db.doc("roster/"+e).set({...row,council:true})}
+    for(const e of(done||[]).filter(x=>!emails.includes(x))){const r=await db.doc("roster/"+e).get();if(!r.exists)continue;const row=r.data()||{};
+      if(row.extra)await db.doc("roster/"+e).delete();else if(row.council)await db.doc("roster/"+e).set({...row,council:false})}
+    await db.doc("admin/access").set({...ADMIN,granted:emails});
+  }catch(err){grantFailed=true;toast("Couldn't update council access from your email list. Reload and try again.")}
+  finally{grantBusy=false}
 }
 async function autoApprove(){
   if(!isPres||!U||!db||!loaded.has("admin")||!loaded.has("config")||!loaded.has("members"))return;
@@ -3251,7 +3271,7 @@ document.addEventListener("click",async e=>{
     case"edit-member":return memberForm(id);
     case"approve":{const d=S.members.find(x=>x.id===id);return save(()=>cfgSet(c=>{c.approved[id]=true}),"Member approved",["approved","member",d&&d.name])}
     case"decline":{const d=S.members.find(x=>x.id===id);return save(()=>db.doc("members/"+id).delete(),"Request declined",["declined","member",d&&d.name])}
-    case"save-emails":{const list=[...new Set($("#emails").value.split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(s=>s.includes("@")))];const ok=await save(()=>db.doc("admin/access").set({emails:list}),`Saved ${list.length} approved email${list.length===1?"":"s"}`,["updated the approved email list","settings",""]);if(ok){autoTried.clear()}return}
+    case"save-emails":{const list=[...new Set($("#emails").value.split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(s=>s.includes("@")))];grantFailed=false;const ok=await save(()=>db.doc("admin/access").set({...ADMIN,emails:list}),`Saved ${list.length} approved email${list.length===1?"":"s"}`,["updated the approved email list","settings",""]);if(ok){autoTried.clear()}return}
     case"save-form":{const raw=$("#formurl").value.trim(),v=safeUrl(raw);if(raw&&!v){toast("Paste a full link that starts with https://");return}return save(()=>cfgSet(c=>{c.formUrl=v;delete c.school}),v?"Suggestion form link saved":"Suggestion form link removed",["updated the suggestion form link","settings",""])}
     case"signin":return window.__signIn&&window.__signIn();
     case"signout":return window.__signOut&&window.__signOut();
@@ -3454,7 +3474,7 @@ function councilForm(){openForm({title:"Add a council member",submitLabel:"Add",
   fields:[{id:"email",label:"Their Google account email",required:true,full:true,placeholder:"name@gmail.com or name@avenues.org"},{id:"name",label:"Name",required:true},{id:"role",label:"Role",type:"select",options:ROLES.filter(r=>r!=="President").map(r=>[r,r])},{id:"grade",label:"Grade",type:"select",options:[["",""],...GRADES.map(g=>[g,"Grade "+g])]}],values:{role:"Member"},
   submit:v=>{const email=(v.email||"").trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("#merr").textContent="That doesn't look like an email address.";return false}
     const emails=[...new Set([...(ADMIN.emails||[]),email])];
-    return save(async()=>{const cur=await db.doc("roster/"+email).get(),row=cur.exists?cur.data()||{}:{};await db.doc("roster/"+email).set({...row,name:v.name||row.name||"",grade:v.grade||row.grade||"",council:true,role:v.role,clubs:row.clubs||[]});await db.doc("admin/access").set({...ADMIN,emails});
+    return save(async()=>{const cur=await db.doc("roster/"+email).get(),row=cur.exists?cur.data()||{}:{};await db.doc("roster/"+email).set({...row,name:v.name||row.name||"",grade:v.grade||row.grade||"",council:true,role:v.role,clubs:row.clubs||[],...(cur.exists?{}:{extra:true})});await db.doc("admin/access").set({...ADMIN,emails});
       const m=S.members.find(d=>(PROF[d.id]&&(PROF[d.id].email||"").toLowerCase())===email);if(m)await cfgSet(c=>{c.approved[m.id]=true;c.roles[m.id]=v.role})},
       `${v.name} added as ${v.role}`,["added to council as "+v.role,"member",v.name])}})}
 async function clearSample(){const items=SAMPLE_COLS.flatMap(c=>S[c].filter(d=>d.sample).map(d=>[c,d.id]));if(!items.length)return;
@@ -3651,7 +3671,7 @@ render();
   if(!db){setStatus("nodb");render();return}
   slowTimer=setTimeout(()=>{if(!subsReady())setStatus("slow")},10000);
   db.doc("config/access").onSnapshot(s=>{cfgExists=s.exists;CFG={approved:{},roles:{},school:"",president:null,...(s.exists?s.data():{})};subDone("config",s);render()},subFail);
-  if(isPres)db.doc("admin/access").onSnapshot(s=>{adminExists=s.exists;ADMIN={emails:[],...(s.exists?s.data():{})};loaded.add("admin");render();autoApprove()},subFail);
+  if(isPres)db.doc("admin/access").onSnapshot(s=>{adminExists=s.exists;ADMIN={emails:[],...(s.exists?s.data():{})};loaded.add("admin");render();syncGrants();autoApprove()},subFail);
   if(!LEAN)COLS.filter(c=>isEditor||!COUNCIL_ONLY.includes(c)).forEach(c=>want(c,"all"));
   bootDone=true;setStatus("connecting");render();
 })();
