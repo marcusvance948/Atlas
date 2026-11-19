@@ -27,7 +27,7 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>window.FIREBASE_VERSION="10.12.2"</script>
 <script defer src="firebase-config.js?v=761b57f4"></script>
-<script defer src="firebase-adapter.js?v=84017969"></script>
+<script defer src="firebase-adapter.js?v=4576354e"></script>
 <script>if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))</script>
 </head>
 <body>
@@ -1220,7 +1220,9 @@ function render(){
     if(d&&!isApproved(d))banner=`<div class="banner">Your council profile is waiting for the president's approval.</div>`;
     else if(d&&isApproved(d)&&!isEditor)banner=`<div class="banner">You're an approved council member. Ask the president to give you Editor access to this page so you can make changes.</div>`;}
   if(preview&&canCouncil())banner=`<div class="banner preview"><span>You're seeing the site the way students see it.</span><button class="btn sm" data-act="mode" data-to="council">Back to council view</button></div>`+banner;
-  if(lockedOut())banner+=`<div class="banner">You're signed in as ${esc(me.email||"an account")}, which isn't on the Avenues student list. Sign in with your school email, or ask Student Council to add you.</div>`;
+  if(lockedOut()){const rc=window.__rosterCheck||{};banner+=rc.error
+    ?`<div class="banner">You're signed in as ${esc(me.email||"an account")}, but the site couldn't check the student list (${esc(rc.error)}). ${rc.error==="permission-denied"?"The security rules in Firebase are probably out of date: ask the president to paste <code>firestore.rules</code> into Firebase → Firestore → Rules and click Publish.":"Reload to try again."}</div>`
+    :`<div class="banner">You're signed in as <b>${esc(me.email||"an account")}</b>, and the student list has no entry for exactly that address. Ask the president to add it on the Members page with <b>+ Add council member by email</b>, then sign out and back in.</div>`}
   const VIEWFN={planner,bulletin,events:exploreTab,calendar:exploreTab,clubs:exploreTab,club:exploreTab,opportunities:exploreTab,officehours:exploreTab,play:playPage,stuco:stucoPage,suggestions:stucoPage,lost:stucoPage,voice:stucoPage,working:stucoPage,myspace:mySpaceView,overview,tasks:()=>tasks(),proposals,attendance,members,history:historyView};
   if(!council()&&shownView()!=="bulletin")banner=alertBar()+banner;
   $("#main").innerHTML=banner+VIEWFN[shownView()]();
