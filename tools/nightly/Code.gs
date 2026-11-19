@@ -6,6 +6,7 @@
  *   Sunday 17:00  weekly email digest to students who turned it on
  *   every 10 minutes  council calendar: email members who were just tagged on an item
  *   07:00  council calendar: email and phone reminder for items due today or tomorrow
+ *   every 10 minutes  student list: if the Google Sheet changed, update roster/ to match (ROSTER_SHEET below)
  *   06:00  game-day bulletin post (varsity home games, NYSAIS and ACIS finals) from the Aviators athletics schedule
  * It signs in to Firestore as the Google account that runs it, so that account must be an Owner or Editor
  * of the Firebase project. No keys are stored anywhere. Set up once: paste Code.gs and appsscript.json,
@@ -21,6 +22,9 @@ var DIGEST = { day: 0, hour: 17, capPerRun: 90 };   // Sunday; Gmail accounts ca
 var STREAK_BONUS = 5;
 var GRADES = ["9", "10", "11", "12"];
 var GAMES_HOUR = 6;
+// The student list's Google Sheet (paste its link here in the Apps Script editor, not in the public repo).
+// Columns: Email, Name, Grade, Birthday, StuCo, Club leader. The account running this script must be able to open it.
+var ROSTER_SHEET = "";
 var ATHLETICS_URL = "https://storage.googleapis.com/avenues-athletics-data/schedule.json";
 
 /* ---------------- schedule ---------------- */
@@ -28,6 +32,7 @@ function setup() {
   ScriptApp.getProjectTriggers().forEach(function (t) { ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger("tick").timeBased().everyHours(1).create();
   ScriptApp.newTrigger("plannerMail").timeBased().everyMinutes(10).create();
+  ScriptApp.newTrigger("syncRoster").timeBased().everyMinutes(10).create();
   var r = runNow();
   Logger.log("Set up. First run: " + JSON.stringify(r));
 }
@@ -43,7 +48,7 @@ function tick() {
   if (Object.keys(out).length) Logger.log(JSON.stringify(out));
 }
 /** Run everything except notifications and email right now (safe to run any time). */
-function runNow() { return { settle: settle(), stats: writeStats(), games: gameDay() }; }
+function runNow() { return { roster: syncRoster(true), settle: settle(), stats: writeStats(), games: gameDay() }; }
 
 /* ---------------- dates ---------------- */
 function today_() { return Utilities.formatDate(new Date(), TZ, "yyyy-MM-dd"); }
@@ -365,4 +370,73 @@ function plannerDue() {
     sent++;
   });
   return "reminded " + sent;
+}
+
+
+/* ---------------- student list from the Google Sheet ----------------
+   Mirrors importRoster() in stuco-hub.html: the sheet is the list. Emails on the president's approved list keep
+   council even if they're not in the sheet; saved positions, invites and sign-ins are kept; a title in the StuCo
+   column becomes the position. Skips when the sheet hasn't changed, and never deletes people if the sheet suddenly
+   looks empty or much shorter (wrong tab, lost sharing). */
+function rosterBid_(e) { var h = 0; for (var i = 0; i < e.length; i++) h = ((h * 31) + e.charCodeAt(i)) >>> 0; return "r" + h.toString(36); }
+function parseBday_(s) {
+  if (!s) return null; var m;
+  if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return [+m[2], +m[3]];
+  if ((m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})/))) return [+m[1], +m[2]];
+  var d = new Date(s + " 2000"); return isNaN(d) ? null : [d.getMonth() + 1, d.getDate()];
+}
+function parseRosterRows_(rows) {
+  rows = rows.map(function (r) { return r.map(function (c) { return String(c == null ? "" : c).trim(); }); }).filter(function (r) { return r.some(String); });
+  if (!rows.length) return [];
+  var idx = { email: 0, name: 1, grade: 2, bday: 3, council: 4, club: 5 }, h = rows[0].map(function (x) { return x.toLowerCase(); });
+  if (!h.some(function (x) { return x.indexOf("@") >= 0; })) {
+    var f = function (re) { for (var i = 0; i < h.length; i++) if (re.test(h[i])) return i; return -1; };
+    idx = { email: f(/e-?mail/), name: f(/name/), grade: f(/grade|class|year/), bday: f(/birth|bday/), council: f(/stuco|council/), club: f(/club/) };
+    rows.shift();
+  }
+  var out = [];
+  rows.forEach(function (r) {
+    var get = function (k) { return idx[k] >= 0 ? (r[idx[k]] || "").trim() : ""; }, email = get("email").toLowerCase();
+    if (!/^[^@\s\/]+@[^@\s\/]+\.[^@\s\/]+$/.test(email)) return;
+    var c = get("council"), e = { name: get("name"), grade: (get("grade").match(/\d+/) || [""])[0], council: !!c && !/^(n|no|false|0|-)$/i.test(c),
+      clubs: get("club").split(/[;|]/).map(function (x) { return x.trim().toLowerCase(); }).filter(String) };
+    if (e.council && !/^(y|yes|true|x|1|stuco|council|✓)$/i.test(c)) e.role = c.slice(0, 60);
+    var b = parseBday_(get("bday")); if (b) { e.bm = b[0]; e.bd = b[1]; }
+    out.push([email, e]);
+  });
+  return out;
+}
+function sameRow_(a, b) { var k = function (o) { var c = {}; Object.keys(o || {}).sort().forEach(function (x) { c[x] = o[x]; }); return JSON.stringify(c); }; return k(a) === k(b); }
+/** force: run even if the sheet hasn't changed since the last sync. */
+function syncRoster(force) {
+  if (!ROSTER_SHEET) return "no sheet set (ROSTER_SHEET)";
+  var ss = SpreadsheetApp.openByUrl(ROSTER_SHEET), props = PropertiesService.getScriptProperties();
+  var changed = String(DriveApp.getFileById(ss.getId()).getLastUpdated().getTime());
+  if (force !== true && props.getProperty("rosterSheetStamp") === changed) return "sheet unchanged";
+  var rows = parseRosterRows_(ss.getSheets()[0].getDataRange().getDisplayValues());
+  var have = byId_(list_("roster")), adm = call_("get", BASE + "/admin/access"), granted = {};
+  ((adm && decFields_(adm.fields).emails) || []).forEach(function (e) { granted[String(e).toLowerCase()] = true; });
+  var current = Object.keys(have).length;
+  if (!rows.length) throw new Error("The student list sheet has no rows with an email. Check the first tab and its Email column.");
+  var guard = current > 20 && rows.length < current / 2;   // looks wrong: add and update only, remove nobody
+  var writes = [], keep = {}, bkeep = {}, births = list_("birthdays");
+  rows.forEach(function (pair) {
+    var email = pair[0], e = pair[1], o = have[email]; keep[email] = true;
+    if (granted[email]) e.council = true;
+    if (o) { if (!e.role && o.role) e.role = o.role; if (o.invitedAt) e.invitedAt = o.invitedAt; if (o.uid) e.uid = o.uid; }
+    if (!o || !sameRow_(Object.assign({}, o, { id: undefined }), e)) writes.push(replaceWrite_("roster/" + email, e));
+    if (e.bm && e.name) { var id = rosterBid_(email); bkeep[id] = true; var bd = { name: e.name, month: e.bm, day: e.bd, show: true, roster: true }, ob = births.filter(function (x) { return x.id === id; })[0];
+      if (!ob || ob.name !== bd.name || ob.month !== bd.month || ob.day !== bd.day) writes.push(replaceWrite_("birthdays/" + id, bd)); }
+  });
+  var removed = 0;
+  Object.keys(have).forEach(function (email) {
+    if (keep[email]) return; var d = have[email];
+    if (granted[email]) { if (!d.extra || !d.council) { var row = Object.assign({}, d); delete row.id; row.council = true; row.extra = true; writes.push(replaceWrite_("roster/" + email, row)); } }
+    else if (!guard) { writes.push({ "delete": docName_("roster/" + email) }); removed++; }
+  });
+  if (!guard) births.forEach(function (b) { if (b.roster && !bkeep[b.id]) writes.push({ "delete": docName_("birthdays/" + b.id) }); });
+  writes.push(mergeWrite_("config/access", { rosterSync: { at: new Date().toISOString(), rows: rows.length, held: guard } }, ["rosterSync"]));
+  commit_(writes);
+  props.setProperty("rosterSheetStamp", changed);
+  return "student list: " + rows.length + " rows, " + (writes.length - 1) + " changes" + (removed ? ", " + removed + " removed" : "") + (guard ? " (held back removals: the sheet is less than half the current list)" : "");
 }

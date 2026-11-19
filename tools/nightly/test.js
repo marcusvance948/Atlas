@@ -67,4 +67,32 @@ Utilities.formatDate=function(d,tz,f){return f==="H"?"17":f==="u"?"7":f==="yyyy-
 check("digest to opted-in students not yet sent this week", MAILS.length===1&&MAILS[0].to==="priya@example.org", dg);
 check("digest content: events (no meetings), deadlines, winners", /Winter formal/.test(MAILS[0].htmlBody)&&!/Council meeting/.test(MAILS[0].htmlBody)&&/Science fair/.test(MAILS[0].htmlBody)&&/1\. Dani, 2\. Priya/.test(MAILS[0].htmlBody));
 check("marked as sent for the week of Nov 16", WRITES[0]&&decFields_(WRITES[0].update.fields).digestSent==="2026-11-16");
+// --- student list from the Google Sheet
+var SHEET=[["Email","Name","Grade","Birthday","StuCo","Club leader"],["Ava@X.org","Ava","10","3/14","yes",""],["ben@x.org","Ben","11","","Treasurer",""],["cam@x.org","Cam","9","","",""],["eli@x.org","Eli","12","","no","Robotics; Chess"]],STAMP=1,PROPS={};
+SpreadsheetApp={openByUrl:function(){return{getId:function(){return"id"},getSheets:function(){return[{getDataRange:function(){return{getDisplayValues:function(){return SHEET}}}}]}}}};
+DriveApp={getFileById:function(){return{getLastUpdated:function(){return new Date(STAMP)}}}};
+PropertiesService={getScriptProperties:function(){return{getProperty:function(k){return PROPS[k]||null},setProperty:function(k,v){PROPS[k]=v}}}};
+ROSTER_SHEET="https://docs.google.com/spreadsheets/d/x";
+DB.roster=[{id:"ben@x.org",name:"Ben",grade:"11",council:false,clubs:[],invitedAt:"t0",uid:"u-ben"},{id:"old@x.org",name:"Old",grade:"12",council:false,clubs:[]},{id:"nico@x.org",name:"",grade:"",council:true,clubs:[],extra:true}];
+DB.birthdays=[{id:"rold",name:"Old",month:1,day:1,show:true,roster:true},{id:"stu9",name:"Self added",month:2,day:2,show:true}];
+call_=function(m,u){return /admin\/access/.test(u)?{fields:enc_({emails:["nico@x.org","cam@x.org"]}).mapValue.fields}:null};
+WRITES=[];var rr=syncRoster();
+var RW={};WRITES.forEach(function(w){if(w["delete"])RW["DEL "+w["delete"].split("/documents/")[1]]=1;else RW[w.update.name.split("/documents/")[1]]=decFields_(w.update.fields)});
+check("sheet rows read with header detection, emails lowercased", !!RW["roster/ava@x.org"]&&RW["roster/ava@x.org"].council===true&&RW["roster/ava@x.org"].bm===3, rr);
+check("a title in StuCo makes council with that position", RW["roster/ben@x.org"].council===true&&RW["roster/ben@x.org"].role==="Treasurer");
+check("invite and sign-in info kept", RW["roster/ben@x.org"].invitedAt==="t0"&&RW["roster/ben@x.org"].uid==="u-ben");
+check("blank StuCo but on the approved list stays council", RW["roster/cam@x.org"].council===true);
+check("no means not council; clubs read", RW["roster/eli@x.org"].council===false&&RW["roster/eli@x.org"].clubs.join(",")==="robotics,chess");
+check("people no longer in the sheet removed", RW["DEL roster/old@x.org"]===1);
+check("approved emails kept even if not in the sheet", !RW["DEL roster/nico@x.org"]);
+check("sheet birthdays written, old list birthdays removed, self-added kept", !!RW["birthdays/"+rosterBid_("ava@x.org")]&&RW["DEL birthdays/rold"]===1&&!RW["DEL birthdays/stu9"]);
+check("birthday id matches the site's", rosterBid_("ava@x.org")==="r"+(function(e){var h=0;for(var i=0;i<e.length;i++)h=(h*31+e.charCodeAt(i))>>>0;return h.toString(36)})("ava@x.org"));
+check("sync status saved for the Members page", RW["config/access"]&&RW["config/access"].rosterSync.rows===4&&RW["config/access"].rosterSync.held===false);
+WRITES=[];var r2=syncRoster();check("skips when the sheet hasn't changed", r2==="sheet unchanged"&&WRITES.length===0, r2);
+// guard: a sheet that suddenly shrank removes nobody
+DB.roster=[];for(var i=0;i<40;i++)DB.roster.push({id:"s"+i+"@x.org",name:"S"+i,grade:"9",council:false,clubs:[]});
+SHEET=[["Email","Name"],["s1@x.org","S1"]];STAMP=2;WRITES=[];var r3=syncRoster();
+check("shrunken sheet: no removals, flagged", !WRITES.some(function(w){return w["delete"]})&&/held back/.test(r3), r3);
+SHEET=[["Email","Name"]];STAMP=3;var threw=false;try{syncRoster()}catch(e){threw=/no rows/.test(e.message)}
+check("empty sheet: stops with an error, writes nothing", threw);
 out.join("\n");
