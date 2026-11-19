@@ -1281,6 +1281,14 @@ function calendar(){
 /* tasks */
 function taskToggle(){return council()?`<div class="seg toggle" role="group" aria-label="Task layout"><button data-act="task-mode" data-to="people" aria-pressed="${taskLayout()==="people"}">By person</button><button data-act="task-mode" data-to="board" aria-pressed="${taskLayout()==="board"}">Board</button></div>`:""}
 const taskLayout=()=>council()?(taskMode||"board"):"people";
+/* many tasks at once: each line is a task, and each ticked person gets their own copy (no one ticked = open to accept) */
+function assignSeveral(){openForm({title:"Assign several tasks",submitLabel:"Assign",
+  fields:[{id:"titles",label:"Tasks, one per line",type:"textarea",required:true},{id:"people",label:"Give each task to",type:"people",options:roster().map(m=>[m.id,m.name]),help:"Tick several people and each gets their own copy. Tick no one to leave the tasks open for any member to accept."},
+    {id:"due",label:"Due date",type:"date"},{id:"priority",label:"Priority",type:"select",options:PRI},{id:"committee",label:"Committee",list:COMMITTEES}],values:{priority:"normal"},
+  submit:v=>{const titles=v.titles.split("\n").map(x=>x.trim()).filter(Boolean),who=v.people.length?v.people:[""],n=titles.length*who.length;
+    if(n>200){$("#merr").textContent=`That's ${n} tasks. Split it into smaller batches.`;return false}
+    const base={due:v.due||"",priority:v.priority||"normal",committee:v.committee||"",details:"",created:new Date().toISOString(),createdBy:me.id||null};
+    return save(async()=>{for(const title of titles)for(const a of who)await col("tasks").add({...base,title,assignee:a})},`${n} task${n===1?"":"s"} assigned`,["assigned "+n+" tasks","task",titles.length===1?titles[0]:titles.length+" tasks"])}})}
 function tasks(force){
   if(!force&&taskLayout()==="board")return taskBoard().replace('<div class="toolbar">','<div class="toolbar">'+taskToggle());
   const all=S.tasks.map(t=>({t,st:taskState(t)}));
@@ -1292,7 +1300,7 @@ function tasks(force){
   const stateOf=st=>st.status==="doing"?["doing","Working on it"]:st.status==="done"?["done","Done"]:st.open?["todo","Open"]:!st.accepted?["wait","Assigned, not accepted yet"]:["todo","Up next"];
   const li=x=>{const[c,l]=stateOf(x.st);return`<li class="${x.st.status}"><span class="title">${esc(x.t.title)}</span><span class="state ${c}">${l}</span><span class="sub parts">${x.t.due?`<span>${dueText(x.t,x.st)}</span>`:""}${x.t.committee?`<span>${esc(x.t.committee)}</span>`:""}</span></li>`};
   const sortItems=a=>a.sort((p,q)=>rank[p.st.status]-rank[q.st.status]||(p.t.due||"9999").localeCompare(q.t.due||"9999"));
-  return head(`What everyone on Student Council is working on right now. ${active} task${active===1?"":"s"} in progress across ${people2} ${people2===1?"person":"people"}.`,"Who's working on what",(force?"":taskToggle())+(!force&&isPres&&W()?`<button class="btn primary" data-act="add-task">+ Assign task</button>`:""))+
+  return head(`What everyone on Student Council is working on right now. ${active} task${active===1?"":"s"} in progress across ${people2} ${people2===1?"person":"people"}.`,"Who's working on what",(force?"":taskToggle())+(!force&&isPres&&W()?`<button class="btn primary" data-act="add-task">+ Assign task</button><button class="btn" data-act="add-tasks">+ Assign several</button>`:""))+
   (people.length||groups.has("_open")?`<div>${people.map(id=>{const m=member(id);return`<section class="prow"><div class="person-id">${avatar(id,"lg")}<div class="grow"><div class="title">${esc(nameOf(id))}</div><div class="sub">${esc(m?m.role:"")}</div></div></div><ul class="ptasks">${sortItems(groups.get(id)).map(li).join("")}</ul></section>`}).join("")}${groups.has("_open")?`<section class="prow"><div class="person-id"><div class="grow"><div class="title">Not picked up yet</div><div class="sub">Any council member can accept these</div></div></div><ul class="ptasks">${sortItems(groups.get("_open")).map(li).join("")}</ul></section>`:""}</div>`
   :empty("No tasks yet",isPres?"Assign a task and it shows up here under the person doing it.":"When Student Council takes on work, you'll see who is doing what here.","add-task","Assign the first task",isPres&&W()));
 }
@@ -1303,7 +1311,7 @@ function taskBoard(){
   else if(taskFilter!=="all")list=list.filter(x=>x.st.owner===taskFilter);
   const sorter=(a,b)=>(a.t.due||"9999").localeCompare(b.t.due||"9999");
   const opts=[["all","Everyone"],...(me.id&&amMember()?[["mine","My tasks"]]:[]),["open","Open to accept"],...roster().map(m=>[m.id,m.name])];
-  return head("","Tasks",isPres&&W()?`<button class="btn primary" data-act="add-task">+ Assign task</button>`:"")+
+  return head("","Tasks",isPres&&W()?`<button class="btn primary" data-act="add-task">+ Assign task</button><button class="btn" data-act="add-tasks">+ Assign several</button>`:"")+
   `<div class="toolbar"><label for="taskFilter" class="sub">Show</label><select id="taskFilter">${opts.map(([v,l])=>`<option value="${esc(v)}" ${v===taskFilter?"selected":""}>${esc(l)}</option>`).join("")}</select><span class="sub">${isPres?"As president, you assign and move tasks. Members accept the tasks given to them, or pick up open ones.":"The president assigns tasks. Accept the ones given to you, or pick up an open task."}</span></div>`+
   (S.tasks.length?`<div class="board">${TASK_STATUS.map(([k,l],i)=>{const items=list.filter(x=>x.st.status===k).sort(sorter);
     return`<div class="col"><h3>${l}<span class="mono muted">${items.length}</span></h3>${items.map(x=>taskCard(x.t,x.st,i)).join("")||`<p class="sub" style="padding:0 6px">Nothing here.</p>`}</div>`}).join("")}</div>`
@@ -3392,6 +3400,7 @@ document.addEventListener("click",async e=>{
     case"edit-event":return forms.event()(id);
     case"day":if(canAct())go("event",{date:b.dataset.date,type:"meeting"});return;
     case"add-task":return go("task",{priority:"normal",assignee:""});
+    case"add-tasks":return assignSeveral();
     case"edit-task":return forms.task()(id);
     case"task-move":{const t=task();return save(()=>col("tasks").doc(id).update({status:b.dataset.to,statusAt:new Date().toISOString()}),null,["moved to "+label(TASK_STATUS,b.dataset.to)+":","task",t&&t.title])}
     case"t-accept":{const t=task();return save(()=>setClaim(id,"accepted"),"Task accepted",["accepted","task",t&&t.title])}
