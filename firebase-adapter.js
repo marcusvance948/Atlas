@@ -51,7 +51,15 @@
         } catch (e) { isCouncil = isOwner; }
         // The person's own row of the student list (grade, StuCo, clubs they lead), if they are on it.
         let row = null;
-        if (u.email) { try { const r = await fs.doc("roster/" + u.email.toLowerCase()).get(); if (r.exists) row = r.data(); } catch (e) {} }
+        // __rosterCheck says what happened, so the site can tell "not on the list" apart from "couldn't read it" (from Nico's PR #3).
+        window.__rosterCheck = { email: u.email ? u.email.toLowerCase() : "", found: false, error: "" };
+        if (u.email) {
+          for (let i = 0; i < 2 && !row; i++) {
+            try { const r = await fs.doc("roster/" + u.email.toLowerCase()).get(); window.__rosterCheck.error = ""; if (r.exists) row = r.data(); break; }
+            catch (e) { window.__rosterCheck.error = (e && e.code) || "unknown"; console.warn("Student list check failed:", e); }
+          }
+        }
+        window.__rosterCheck.found = !!row;
         window.__rosterMe = row;
         if (row && row.council) isCouncil = true;
         isLeader = !!(row && (row.clubs || []).length);

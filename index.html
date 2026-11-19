@@ -27,7 +27,7 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>window.FIREBASE_VERSION="10.12.2"</script>
 <script defer src="firebase-config.js?v=761b57f4"></script>
-<script defer src="firebase-adapter.js?v=84017969"></script>
+<script defer src="firebase-adapter.js?v=0d610485"></script>
 <script>if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))</script>
 </head>
 <body>
@@ -1133,6 +1133,12 @@ const council=()=>canCouncil()&&!preview;
 const canAct=()=>W()&&council();
 const RM=()=>window.__rosterMe||null;
 const clubKey=n=>String(n||"").trim().toLowerCase();
+/* why a signed-in person doesn't have council view (website only) */
+function accessExplain(){if(!window.__signIn||!me.id||canCouncil())return"";const rc=window.__rosterCheck||{},r=RM(),em=`<b>${esc(me.email||rc.email||"this account")}</b>`;
+  if(rc.error)return`You're signed in as ${em}, but the site couldn't read the student list (${esc(rc.error)}). ${rc.error==="permission-denied"?"The Firebase security rules are probably out of date: the president needs to paste <code>firestore.rules</code> into Firebase → Firestore → Rules and click Publish.":"Reload to try again."}`;
+  if(!r)return`You're signed in as ${em}. The student list has no entry for exactly that address${CFG.rosterOnly?", so you can't join yet":""}. If you're on Student Council, ask the president to add this exact email on the Members page, then sign out and back in.`;
+  if(r.council)return`You're signed in as ${em} and marked as Student Council. Sign out and back in to switch on council view.`;
+  return lockedOut()?"":`You're signed in as ${em}. You're on the student list, but not marked as Student Council. If you should be, ask the president to put your position (or "yes") in the StuCo column, or add you with <b>+ Add council member by email</b>.`}
 const lockedOut=()=>!!window.__signIn&&!!CFG.rosterOnly&&!!me.id&&!RM()&&!canCouncil();
 const canJoin=()=>W()&&!!me.id&&!lockedOut();
 const allowed=v=>!!ROUTES[v]&&(council()||STUDENT_ROUTES.includes(v)||(v==="members"&&canJoin()));
@@ -1220,7 +1226,7 @@ function render(){
     if(d&&!isApproved(d))banner=`<div class="banner">Your council profile is waiting for the president's approval.</div>`;
     else if(d&&isApproved(d)&&!isEditor)banner=`<div class="banner">You're an approved council member. Ask the president to give you Editor access to this page so you can make changes.</div>`;}
   if(preview&&canCouncil())banner=`<div class="banner preview"><span>You're seeing the site the way students see it.</span><button class="btn sm" data-act="mode" data-to="council">Back to council view</button></div>`+banner;
-  if(lockedOut())banner+=`<div class="banner">You're signed in as ${esc(me.email||"an account")}, which isn't on the Avenues student list. Sign in with your school email, or ask Student Council to add you.</div>`;
+  {const ex=accessExplain();if(ex&&(lockedOut()||shownView()==="members"||shownView()==="myspace"))banner+=`<div class="banner">${ex}</div>`}
   const VIEWFN={planner,bulletin,events:exploreTab,calendar:exploreTab,clubs:exploreTab,club:exploreTab,opportunities:exploreTab,officehours:exploreTab,play:playPage,stuco:stucoPage,suggestions:stucoPage,lost:stucoPage,voice:stucoPage,working:stucoPage,myspace:mySpaceView,overview,tasks:()=>tasks(),proposals,attendance,members,history:historyView};
   if(!council()&&shownView()!=="bulletin")banner=alertBar()+banner;
   $("#main").innerHTML=banner+VIEWFN[shownView()]();
@@ -2087,14 +2093,14 @@ function parseRoster(text){
   if(!h.some(x=>x.includes("@"))){const f=re=>h.findIndex(x=>re.test(x));idx={email:f(/e-?mail/),name:f(/name/),grade:f(/grade|class|year/),bday:f(/birth|bday/),council:f(/stuco|council/),club:f(/club/)};rows.shift()}
   const out=[];
   for(const r of rows){const get=k=>idx[k]>=0?(r[idx[k]]||"").trim():"",email=get("email").toLowerCase();if(!/^[^@\s\/]+@[^@\s\/]+\.[^@\s\/]+$/.test(email))continue;
-    const b=parseBday(get("bday")),e={name:get("name"),grade:(get("grade").match(/\d+/)||[""])[0],council:/^(y|yes|true|x|1|stuco|council)/i.test(get("council")),clubs:get("club").split(/[;|]/).map(clubKey).filter(Boolean)};
-    if(b){e.bm=b[0];e.bd=b[1]}out.push([email,e])}
+    const b=parseBday(get("bday")),e={name:get("name"),grade:(get("grade").match(/\d+/)||[""])[0],council:!!get("council")&&!/^(n|no|false|0|-)$/i.test(get("council")),clubs:get("club").split(/[;|]/).map(clubKey).filter(Boolean)};
+    if(b){e.bm=b[0];e.bd=b[1]}const pos=get("council");if(e.council&&!/^(y|yes|true|x|1|stuco|council|✓)$/i.test(pos))e.role=pos.slice(0,60);out.push([email,e])}
   return out}
 function rosterSummary(){const n=S.roster.length;if(!n)return"No list imported yet.";return`${n} people on the list: ${GRADES.map(g=>`${S.roster.filter(d=>d.grade===g).length} in Grade ${g}`).join(", ")}. ${S.roster.filter(d=>d.council).length} on StuCo, ${S.roster.filter(d=>(d.clubs||[]).length).length} club leaders.`}
 async function importRoster(){
   const rows=parseRoster($("#rosterPaste").value);if(!rows.length){toast("No rows with an email address found. Check that you copied the Email column.");return}
   const bid=e=>{let h=0;for(const ch of e)h=(h*31+ch.charCodeAt(0))>>>0;return"r"+h.toString(36)},keep=new Set(rows.map(r=>r[0])),bkeep=new Set(),jobs=[],granted=new Set((ADMIN.emails||[]).map(x=>x.toLowerCase()));  // emails the president gave council view stay, even if they are not in the sheet
-  for(const[email,e]of rows){const o=S.roster.find(d=>d.id===email);if(granted.has(email))e.council=true;if(o&&o.role)e.role=o.role;jobs.push(()=>db.doc("roster/"+email).set(e));if(e.bm&&e.name){bkeep.add(bid(email));jobs.push(()=>db.doc("birthdays/"+bid(email)).set({name:e.name,month:e.bm,day:e.bd,show:true,roster:true}))}}
+  for(const[email,e]of rows){const o=S.roster.find(d=>d.id===email);if(granted.has(email))e.council=true;if(!e.role&&o&&o.role)e.role=o.role;jobs.push(()=>db.doc("roster/"+email).set(e));if(e.bm&&e.name){bkeep.add(bid(email));jobs.push(()=>db.doc("birthdays/"+bid(email)).set({name:e.name,month:e.bm,day:e.bd,show:true,roster:true}))}}
   for(const d of S.roster)if(!keep.has(d.id)){if(!granted.has(d.id))jobs.push(()=>db.doc("roster/"+d.id).delete());else if(!d.extra||!d.council){const{id,...row}=d;jobs.push(()=>db.doc("roster/"+id).set({...row,council:true,extra:true}))}}
   for(const d of S.birthdays)if(d.roster&&!bkeep.has(d.id))jobs.push(()=>db.doc("birthdays/"+d.id).delete());
   await save(async()=>{for(let i=0;i<jobs.length;i+=20){const st=$("#rosterStatus");if(st)st.textContent=`Importing ${Math.min(i+20,jobs.length)} of ${jobs.length}…`;await Promise.all(jobs.slice(i,i+20).map(j=>j()))}
