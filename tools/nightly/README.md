@@ -30,7 +30,7 @@ The script keeps the site's student list matched to your Google Sheet, so you ne
 
 1. In the script editor, find `var ROSTER_SHEET = "";` near the top of `Code.gs` and paste your sheet's link between the quotes. (Keep the link out of the public repo; only paste it in the editor.)
 2. Make sure the account running the script can open the sheet (if someone else owns it, share it with that account, view access is enough).
-3. Run **setup** again and allow the new access (Google Sheets and Drive, read-only). It adds a 10-minute check.
+3. Run **setup** again and allow the new access (Google Sheets, and Drive read-only; Google requires full Sheets access to open a sheet by link, but the script only reads it). It adds a 10-minute check.
 
 From then on: edit the sheet, and within 10 minutes the site's student list matches. The first tab is read. Columns: Email, Name, Grade, Birthday, StuCo, Club leader. Under StuCo put "yes" or the person's position (e.g. Treasurer); leave it blank for everyone else.
 
