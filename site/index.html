@@ -919,6 +919,10 @@ a.fchip{text-decoration:none;display:inline-block}
 @media (max-width:980px){.hub{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:560px){.bmini-grid{grid-template-columns:minmax(0,1fr);gap:12px}.hub .mix{columns:1}}
 
+table.perms td{text-align:center}
+table.perms td:first-child,table.perms th:first-child{text-align:left}
+table.perms th{font-size:12px;white-space:normal;min-width:90px;vertical-align:bottom}
+
 /* history */
 .hday{font-size:17px;font-weight:800;margin-top:14px}
 .hday:first-child{margin-top:0}
@@ -1130,7 +1134,13 @@ const W=()=>canWrite&&!!db;
 let preview=false;try{preview=localStorage.getItem("stuco-view")==="student"}catch(e){}
 const canCouncil=()=>isPres||(amMember()&&isEditor);
 const council=()=>canCouncil()&&!preview;
-const canAct=()=>W()&&council();
+const CAPS=[["post","Announcements, events, Spotlight and opportunities"],["approve","Approve student posts; manage clubs"],["games","Games, challenges and points"],["polls","Polls and feedback replies"],["work","StuCo accomplishments and archive"],["lost","Lost and found and rooms"],["tasks","Assign tasks"],["proposals","Proposals and attendance"]];
+const DEFAULT_CAPS=["post","approve","games","polls","work","lost","proposals"];
+const myRole=()=>(CFG.roles||{})[me.id]||(RM()&&RM().role)||"Member";
+const capOK=c=>isPres||(canCouncil()&&((CFG.perms||{})[myRole()]||DEFAULT_CAPS).includes(c));
+let AREA=null;
+// shortcut: buttons are gated by the area whose view function is drawing them (see AREAS); a button drawn by an unlisted function only needs council
+const canAct=()=>W()&&council()&&(!AREA||capOK(AREA));
 const RM=()=>window.__rosterMe||null;
 const clubKey=n=>String(n||"").trim().toLowerCase();
 /* why a signed-in person doesn't have council view (website only) */
@@ -1324,9 +1334,9 @@ function tasks(force){
   const stateOf=st=>st.status==="doing"?["doing","Working on it"]:st.status==="done"?["done","Done"]:st.open?["todo","Open"]:!st.accepted?["wait","Assigned, not accepted yet"]:["todo","Up next"];
   const li=x=>{const[c,l]=stateOf(x.st);return`<li class="${x.st.status}"><span class="title">${esc(x.t.title)}</span><span class="state ${c}">${l}</span><span class="sub parts">${x.t.due?`<span>${dueText(x.t,x.st)}</span>`:""}${x.t.committee?`<span>${esc(x.t.committee)}</span>`:""}</span></li>`};
   const sortItems=a=>a.sort((p,q)=>rank[p.st.status]-rank[q.st.status]||(p.t.due||"9999").localeCompare(q.t.due||"9999"));
-  return head(`What everyone on Student Council is working on right now. ${active} task${active===1?"":"s"} in progress across ${people2} ${people2===1?"person":"people"}.`,"Who's working on what",(force?"":taskToggle())+(!force&&isPres&&W()?`<button class="btn primary" data-act="add-task">+ Assign task</button>`:""))+
+  return head(`What everyone on Student Council is working on right now. ${active} task${active===1?"":"s"} in progress across ${people2} ${people2===1?"person":"people"}.`,"Who's working on what",(force?"":taskToggle())+(!force&&(W()&&council()&&capOK("tasks"))?`<button class="btn primary" data-act="add-task">+ Assign task</button>`:""))+
   (people.length||groups.has("_open")?`<div>${people.map(id=>{const m=member(id);return`<section class="prow"><div class="person-id">${avatar(id,"lg")}<div class="grow"><div class="title">${esc(nameOf(id))}</div><div class="sub">${esc(m?m.role:"")}</div></div></div><ul class="ptasks">${sortItems(groups.get(id)).map(li).join("")}</ul></section>`}).join("")}${groups.has("_open")?`<section class="prow"><div class="person-id"><div class="grow"><div class="title">Not picked up yet</div><div class="sub">Any council member can accept these</div></div></div><ul class="ptasks">${sortItems(groups.get("_open")).map(li).join("")}</ul></section>`:""}</div>`
-  :empty("No tasks yet",isPres?"Assign a task and it shows up here under the person doing it.":"When Student Council takes on work, you'll see who is doing what here.","add-task","Assign the first task",isPres&&W()));
+  :empty("No tasks yet",isPres?"Assign a task and it shows up here under the person doing it.":"When Student Council takes on work, you'll see who is doing what here.","add-task","Assign the first task",(W()&&council()&&capOK("tasks"))));
 }
 function taskBoard(){
   let list=S.tasks.map(t=>({t,st:taskState(t)}));
@@ -1335,11 +1345,11 @@ function taskBoard(){
   else if(taskFilter!=="all")list=list.filter(x=>x.st.owner===taskFilter);
   const sorter=(a,b)=>(a.t.due||"9999").localeCompare(b.t.due||"9999");
   const opts=[["all","Everyone"],...(me.id&&amMember()?[["mine","My tasks"]]:[]),["open","Open to accept"],...roster().map(m=>[m.id,m.name])];
-  return head("","Tasks",isPres&&W()?`<button class="btn primary" data-act="add-task">+ Assign task</button>`:"")+
+  return head("","Tasks",(W()&&council()&&capOK("tasks"))?`<button class="btn primary" data-act="add-task">+ Assign task</button>`:"")+
   `<div class="toolbar"><label for="taskFilter" class="sub">Show</label><select id="taskFilter">${opts.map(([v,l])=>`<option value="${esc(v)}" ${v===taskFilter?"selected":""}>${esc(l)}</option>`).join("")}</select><span class="sub">${isPres?"As president, you assign and move tasks. Members accept the tasks given to them, or pick up open ones.":"The president assigns tasks. Accept the ones given to you, or pick up an open task."}</span></div>`+
   (S.tasks.length?`<div class="board">${TASK_STATUS.map(([k,l],i)=>{const items=list.filter(x=>x.st.status===k).sort(sorter);
     return`<div class="col"><h3>${l}<span class="mono muted">${items.length}</span></h3>${items.map(x=>taskCard(x.t,x.st,i)).join("")||`<p class="sub" style="padding:0 6px">Nothing here.</p>`}</div>`}).join("")}</div>`
-  :empty("No tasks yet",isPres?"Assign a task to a member, or leave it open so anyone can accept it. Due dates show on the calendar.":"When the president assigns tasks, they show up here.","add-task","Assign the first task",isPres&&W()));
+  :empty("No tasks yet",isPres?"Assign a task to a member, or leave it open so anyone can accept it. Due dates show on the calendar.":"When the president assigns tasks, they show up here.","add-task","Assign the first task",(W()&&council()&&capOK("tasks"))));
 }
 function taskCard(t,st,i){
   const mine=me.id&&st.owner===me.id,acts=[];
@@ -1353,7 +1363,7 @@ function taskCard(t,st,i){
       if(!t.assignee&&st.status!=="done")acts.push(`<button class="btn sm ghost" data-act="t-drop" data-id="${t.id}">Drop</button>`);
     }
   }
-  const pres=isPres&&W()?`<div class="iconbtns">${i>0?`<button class="ib" data-act="task-move" data-id="${t.id}" data-to="${TASK_STATUS[i-1][0]}" aria-label="Move to ${TASK_STATUS[i-1][1]}">←</button>`:""}${i<2?`<button class="ib" data-act="task-move" data-id="${t.id}" data-to="${TASK_STATUS[i+1][0]}" aria-label="Move to ${TASK_STATUS[i+1][1]}">→</button>`:""}<button class="ib" data-act="edit-task" data-id="${t.id}" aria-label="Edit task">✎</button></div>`:"";
+  const pres=(W()&&council()&&capOK("tasks"))?`<div class="iconbtns">${i>0?`<button class="ib" data-act="task-move" data-id="${t.id}" data-to="${TASK_STATUS[i-1][0]}" aria-label="Move to ${TASK_STATUS[i-1][1]}">←</button>`:""}${i<2?`<button class="ib" data-act="task-move" data-id="${t.id}" data-to="${TASK_STATUS[i+1][0]}" aria-label="Move to ${TASK_STATUS[i+1][1]}">→</button>`:""}<button class="ib" data-act="edit-task" data-id="${t.id}" aria-label="Edit task">✎</button></div>`:"";
   return`<article class="card ${mine?"mine":""}"><div class="row"><span class="title">${esc(t.title)}</span><span class="pri ${esc(t.priority||"normal")}" title="${label(PRI,t.priority||"normal")} priority"></span></div>${t.details?`<div class="detail">${esc(t.details)}</div>`:""}<div class="row">${who(st.owner,"Open to anyone")}<span class="sub">${dueText(t,st)}</span></div><div class="row">${statusChip(t,st)}${t.committee?`<span class="chip">${esc(t.committee)}</span>`:""}</div>${acts.length||pres?`<div class="row"><div class="iconbtns">${acts.join("")}</div>${pres}</div>`:""}</article>`;
 }
 
@@ -2542,7 +2552,7 @@ function lunchFromRows(rows){const head=rows[0]||[],dates=[],base=parse(TODAY);
 function lunchPost(m){const ds=Object.keys(m.days).sort(),first=parse(ds[0]),last=parse(ds[ds.length-1]),f=d=>GMONTHS[d.getMonth()]+" "+d.getDate();
   return{title:"Lunch this week, "+f(first)+" to "+f(last),body:ds.map(d=>{const o=m.days[d],dd=parse(d);return GDAYS[dd.getDay()]+", "+f(dd)+": "+(o.entree||"See the menu")+(o.veg&&o.veg!==o.entree?"\n  Vegetarian: "+o.veg:"")+(o.sides?"\n  Sides: "+o.sides:"")+(o.sandwich?"\n  Sandwich: "+o.sandwich:"")}).join("\n\n")+"\n\nFrom the dining team's menu. Allergens are listed at each service line."}}
 async function settleGames(){
-  if(settling||!db||!canCouncil()||!canWrite||!["games","gamevotes","plays","scores","gamekeys"].every(c=>LEAN?fullData(c):loaded.has(c)))return;
+  if(settling||!db||!capOK("games")||!canWrite||!["games","gamevotes","plays","scores","gamekeys"].every(c=>LEAN?fullData(c):loaded.has(c)))return;
   const due=S.games.filter(g=>g.date<TODAY&&!g.awarded);if(!due.length)return;settling=true;
   try{const awards={},done=[];for(const g of due){const pts=Number(g.points)||10,wins={};let result=gameResult(g)||{};
     if(g.type==="versus"){for(const d of S.gamevotes){const p=((d.v||{})[g.id]||{}).pick;if(p&&(result.win==="tie"||p===result.win))wins[d.id]={p:pts,d}}}
@@ -3116,10 +3126,13 @@ function members(){
     else if(!isApproved(mine))joinCard=`<div class="banner">Your profile is waiting for approval. If your email is on the president's approved list, it goes through automatically the next time the president opens the site.</div>`;
   }
   return head("","Members",(mine&&amMember()?`<button class="btn" data-act="edit-profile">Edit my profile</button>`:"")+(isPres&&W()?`${mine?"":`<button class="btn" data-act="join">Create my profile</button>`}<button class="btn primary" data-act="add-member">+ Add member without an account</button>`:""))+
-  joinCard+invitedHTML()+(isPres&&W()?presPanel():"")+
+  joinCard+invitedHTML()+(isPres&&W()?presPanel()+permsPanel():"")+
   (ms.length?`<div class="people">${ms.map(m=>`<article class="person ${m.id===me.id?"me-card":""}"><div class="top">${avatar(m.id,"xl")}<div class="grow"><div class="title" style="font-size:17px">${esc(m.name)}${m.id===me.id?' <span class="muted" style="font-weight:400">(you)</span>':""}</div><div><span class="chip ${m.role==="President"?"accent":""}">${esc(m.role)}</span></div><div class="sub" style="margin-top:4px">${[m.grade?"Grade "+m.grade:"",m.committee].filter(Boolean).map(esc).join(", ")}</div></div></div>${m.bio?`<p>${esc(m.bio)}</p>`:""}<div class="stats"><span>Open tasks <b>${S.tasks.filter(t=>{const s=taskState(t);return s.owner===m.id&&s.status!=="done"}).length}</b></span><span>Attendance <b>${attRate(m.id)}</b></span>${m.manual?"<span>No account</span>":""}</div>${isPres&&W()?`<div><button class="btn sm ghost" data-act="edit-member" data-id="${m.id}">Edit</button></div>`:m.id===me.id?`<div><button class="btn sm ghost" data-act="edit-profile">Edit my profile</button></div>`:""}</article>`).join("")}</div>`
   :empty("No members yet",isPres?"Create your own profile, list your members' email addresses below, then share the page with them.":"Council members appear here once the president approves them.",isPres?"join":null,"Create my profile",isPres&&W()));
 }
+function permsPanel(){
+  const roles=[...new Set([...ROLES,...Object.values(CFG.roles||{}),...S.roster.map(d=>d.role)].filter(r=>r&&r!=="President"))],P=CFG.perms||{};
+  return`<section class="panel"><h2>Who can do what <span class="sub" style="font-weight:500">Only you see this. You can always do everything.</span></h2><div class="tablewrap"><table class="perms"><thead><tr><th>Position</th>${CAPS.map(([k,l])=>`<th>${esc(l)}</th>`).join("")}</tr></thead><tbody>${roles.map((r,i)=>`<tr><td><b>${esc(r)}</b></td>${CAPS.map(([k,l])=>`<td><input type="checkbox" id="perm-${i}-${k}" data-role="${esc(r)}" data-cap="${k}" aria-label="${esc(r)}: ${esc(l)}" ${(P[r]||DEFAULT_CAPS).includes(k)?"checked":""}></td>`).join("")}</tr>`).join("")}</tbody></table></div><div class="toolbar"><button class="btn primary" data-act="perms-save">Save permissions</button><span class="sub">A member's position is the role you set on them, or the position in the StuCo column of the student list.</span></div></section>`}
 function presPanel(){
   const pend=S.members.filter(d=>!isApproved(d));resolveIds(pend.map(d=>d.id));
   const nSample=SAMPLE_COLS.reduce((t,c)=>t+S[c].filter(d=>d.sample).length,0);
@@ -3327,6 +3340,7 @@ document.addEventListener("click",async e=>{
     case"mycal-next":myCursor=new Date(myCursor.getFullYear(),myCursor.getMonth()+1,1);return render();
     case"room-book":return bookForm();
     case"room-cancel":{const d=S.bookings.find(x=>x.id===b.dataset.uid);if(!d)return;const it={...d.items};delete it[id];return save(()=>db.doc("bookings/"+d.id).set({items:it}),"Booking cancelled")}
+    case"perms-save":{const P={};document.querySelectorAll("table.perms input[data-role]").forEach(el=>{(P[el.dataset.role]=P[el.dataset.role]||[]);if(el.checked)P[el.dataset.role].push(el.dataset.cap)});return save(()=>cfgSet(c=>{c.perms=P}),"Permissions saved",["changed who can do what","settings",""])}
     case"rooms-edit":return openForm({title:"Rooms students can book",fields:[{id:"rooms",label:"One room per line",type:"textarea",placeholder:"Room 512\nLibrary study room\nBlack box theater"}],values:{rooms:(CFG.rooms||[]).join("\n")},submit:v=>save(()=>cfgSet(c=>{c.rooms=[...new Set(v.rooms.split("\n").map(x=>x.trim()).filter(Boolean))].slice(0,40)}),"Rooms saved")});
     case"archive-open":return openArchive(+b.dataset.to);
     case"archive-close":return closeArchive();
@@ -3684,6 +3698,14 @@ function planForm(id,preset={}){
       if(all&&!confirm(`Delete all ${n} dates of “${doc.title}” from ${fmt(doc.date,{month:"short",day:"numeric"})} on?`))return false;
       return save(()=>Promise.all([doc,...(all?later:[])].map(x=>col("plans").doc(x.id).delete())),all?`Deleted ${n} dates`:"Deleted",["deleted","calendar item",doc.title])}:null});
 }
+
+const AREAS={post:["evRow","calendar","bulletin","weekView","postCard","eventsView","eventCard","albumCard","storyCard","aviatorBlock","bdayPanel","playlistPanel","oppList","oppCard","lifeView"],
+  approve:["modPanel","feedCard","submitItem","postForm","workBar","clubsView","clubPage","clubPageForm","canEditClub","postHTML","clubPostForm"],
+  games:["todayBody","predictionsView","predCard","leaderBody","chalCard","challengesView","photoHTML","plannerHTML","gamesView","playPage","settleAlert"],
+  polls:["suggestions","pollsView","pollCard"],work:["winReel","tapeHTML","tapeShelf","workSection","drawArchive","pinCard"],lost:["lostView","roomsHTML"],
+  proposals:["proposals","exportProposal","proposalDetail","attGrid","attendance","meetingDetail"]};
+for(const[cap,names]of Object.entries(AREAS))for(const n of names){const f=window[n];if(typeof f!=="function"){console.warn("AREAS: no function",n);continue}
+  window[n]=function(...a){const prev=AREA;AREA=cap;try{return f.apply(this,a)}finally{AREA=prev}}}
 
 /* ---------- boot ---------- */
 render();

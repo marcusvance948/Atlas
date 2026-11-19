@@ -33,17 +33,20 @@ service cloud.firestore {
     // Once "Only people on this list can join" is on, signing in isn't enough: the email must be on the list.
     function member() { return signedIn() && (access().get('rosterOnly', false) != true || onRoster() || isCouncil()); }
     function isSelf(uid) { return member() && request.auth.uid == uid; }
+    // Permissions by position. The president sets them in "Who can do what"; a position with no saved row gets the defaults.
+    function roleOf() { return access().get('roles', {}).get(request.auth.uid, onRoster() ? me().get('role', 'Member') : 'Member'); }
+    function hasCap(c) { return isOwner() || (isCouncil() && c in access().get('perms', {}).get(roleOf(), ['post','approve','games','polls','work','lost','proposals'])); }
     function isLeader() { return onRoster() && me().get('clubs', []).size() > 0; }
 
     // Public school information
-    match /bulletin/{id} { allow read: if true; allow write: if isCouncil(); }
-    match /events/{id}   { allow read: if true; allow write: if isCouncil(); }
-    match /opps/{id}     { allow read: if true; allow write: if isCouncil(); }
+    match /bulletin/{id} { allow read: if true; allow write: if hasCap('post'); }
+    match /events/{id}   { allow read: if true; allow write: if hasCap('post'); }
+    match /opps/{id}     { allow read: if true; allow write: if hasCap('post') || hasCap('approve'); }
     // Clubs: council adds and removes them. A club's leaders (named on the student list) can edit its page,
     // but not rename it, so the club stays matched to their list entry.
     match /clubs/{id} {
       allow read: if true;
-      allow write: if isCouncil();
+      allow write: if hasCap('approve');
       allow update: if isLeader() && resource.data.name.lower() in me().get('clubs', [])
                     && request.resource.data.name == resource.data.name;
     }
@@ -56,17 +59,17 @@ service cloud.firestore {
     }
 
     // Student side, members only
-    match /albums/{id}      { allow read: if member(); allow write: if isCouncil(); }
-    match /stories/{id}     { allow read: if member(); allow write: if isCouncil(); }
-    match /polls/{id}       { allow read: if member(); allow write: if isCouncil(); }
-    match /aviators/{id}    { allow read: if member(); allow write: if isCouncil(); }
-    match /predictions/{id} { allow read: if member(); allow write: if isCouncil(); }
-    match /scores/{id}      { allow read: if member(); allow write: if isCouncil(); }
-    match /clubposts/{id}   { allow read: if member(); allow write: if isCouncil(); }
-    match /years/{id}       { allow read: if member(); allow write: if isCouncil(); }
-    match /wins/{id}        { allow read: if member(); allow write: if isCouncil(); }
-    match /posts/{id}       { allow read: if member(); allow write: if isCouncil(); }
-    match /challenges/{id}  { allow read: if member(); allow write: if isCouncil(); }
+    match /albums/{id}      { allow read: if member(); allow write: if hasCap('post'); }
+    match /stories/{id}     { allow read: if member(); allow write: if hasCap('post'); }
+    match /polls/{id}       { allow read: if member(); allow write: if hasCap('polls'); }
+    match /aviators/{id}    { allow read: if member(); allow write: if hasCap('post'); }
+    match /predictions/{id} { allow read: if member(); allow write: if hasCap('games'); }
+    match /scores/{id}      { allow read: if member(); allow write: if hasCap('games'); }
+    match /clubposts/{id}   { allow read: if member(); allow write: if hasCap('approve'); }
+    match /years/{id}       { allow read: if member(); allow write: if hasCap('work'); }
+    match /wins/{id}        { allow read: if member(); allow write: if hasCap('work'); }
+    match /posts/{id}       { allow read: if member(); allow write: if hasCap('approve'); }
+    match /challenges/{id}  { allow read: if member(); allow write: if hasCap('games'); }
     match /photos/{id} {
       allow read: if member();
       allow create: if member() && request.resource.data.data is string && request.resource.data.data.size() < 1000000;
@@ -75,7 +78,7 @@ service cloud.firestore {
     match /members/{uid} { allow read: if member(); allow write: if isOwner() || isSelf(uid); }
     // Council calendar: a shared checklist every council member can add to, edit and check off
     match /plans/{id}    { allow read, write: if isCouncil(); }
-    match /tasks/{id}    { allow read: if member(); allow write: if isOwner(); }
+    match /tasks/{id}    { allow read: if member(); allow write: if hasCap('tasks'); }
     match /claims/{uid}  { allow read: if member(); allow write: if isOwner() || (isSelf(uid) && isCouncil()); }
 
     // Each person's own entries
@@ -83,7 +86,7 @@ service cloud.firestore {
     match /birthdays/{uid}   { allow read: if member(); allow write: if isSelf(uid) || isCouncil(); }
     match /playlists/{uid}   { allow read: if member(); allow write: if isSelf(uid) || isCouncil(); }
     match /votes/{uid}       { allow read: if isSelf(uid) || isCouncil(); allow write: if isSelf(uid); }
-    match /suggestions/{uid} { allow read, write: if isSelf(uid) || isCouncil(); }
+    match /suggestions/{uid} { allow read: if isSelf(uid) || isCouncil(); allow write: if isSelf(uid) || hasCap('polls'); }
     // Grade Race picks: the grade must match the student list, so nobody can play for another grade
     match /picks/{uid} {
       allow read: if isSelf(uid) || isCouncil();
@@ -92,31 +95,31 @@ service cloud.firestore {
     // Club posts wait here until a council member approves them
     match /clubdrafts/{uid} {
       allow read: if isSelf(uid) || isCouncil();
-      allow write: if (isSelf(uid) && isLeader()) || isCouncil();
+      allow write: if (isSelf(uid) && isLeader()) || hasCap('approve');
     }
     // Student posts and creative work wait here until a council member approves them
-    match /submissions/{uid} { allow read: if isSelf(uid) || isCouncil(); allow write: if isSelf(uid) || isCouncil(); }
+    match /submissions/{uid} { allow read: if isSelf(uid) || isCouncil(); allow write: if isSelf(uid) || hasCap('approve'); }
     // Replies show right away; council can remove them
     match /replies/{uid}     { allow read: if member(); allow write: if isSelf(uid) || isCouncil(); }
     // "I did it" claims for challenges; council confirms and awards the points
     match /done/{uid}        { allow read: if isSelf(uid) || isCouncil(); allow write: if isSelf(uid); }
     // Daily games. Votes and photo entries are visible to members; quiz progress is private; answer keys are council only
-    match /games/{id}       { allow read: if member(); allow write: if isCouncil(); }
-    match /gamekeys/{id}    { allow read, write: if isCouncil(); }
-    match /gamevotes/{uid}  { allow read: if member(); allow write: if isSelf(uid) || isCouncil(); }
+    match /games/{id}       { allow read: if member(); allow write: if hasCap('games'); }
+    match /gamekeys/{id}    { allow read: if isCouncil(); allow write: if hasCap('games'); }
+    match /gamevotes/{uid}  { allow read: if member(); allow write: if isSelf(uid) || hasCap('games'); }
     match /plays/{uid}      { allow read: if isSelf(uid) || isCouncil(); allow write: if isSelf(uid); }
     // MySpace: the public card, private pins and calendar items, and room bookings everyone can see
     match /spaces/{uid}     { allow read: if member(); allow write: if isSelf(uid); }
     match /mine/{uid}       { allow read, write: if isSelf(uid); }
-    match /bookings/{uid}   { allow read: if member(); allow write: if isSelf(uid) || isCouncil(); }
+    match /bookings/{uid}   { allow read: if member(); allow write: if isSelf(uid) || hasCap('lost'); }
     // Lost and found items show right away; the poster or council marks them returned
-    match /lostfound/{uid}   { allow read: if member(); allow write: if isSelf(uid) || isCouncil(); }
+    match /lostfound/{uid}   { allow read: if member(); allow write: if isSelf(uid) || hasCap('lost'); }
     match /profiles/{uid} { allow read: if member(); allow write: if signedIn() && request.auth.uid == uid; }
     match /private/{uid}  { allow read: if isOwner() || (signedIn() && request.auth.uid == uid); allow write: if signedIn() && request.auth.uid == uid; }
 
     // Council only
-    match /proposals/{id} { allow read, write: if isCouncil(); }
-    match /meetings/{id}  { allow read, write: if isCouncil(); }
+    match /proposals/{id} { allow read: if isCouncil(); allow write: if hasCap('proposals'); }
+    match /meetings/{id}  { allow read: if isCouncil(); allow write: if hasCap('proposals'); }
     match /history/{id}   { allow read, write: if isCouncil(); }
     match /admin/{id}     { allow read, write: if isOwner(); }
   }
