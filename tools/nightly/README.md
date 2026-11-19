@@ -24,6 +24,21 @@ The site still settles points itself if a council member opens it first; both us
 
 To run the settle and summary jobs by hand any time, run **runNow**.
 
+## Student list from your Google Sheet
+
+The script keeps the site's student list matched to your Google Sheet, so you never paste it into the site.
+
+1. In the script editor, find `var ROSTER_SHEET = "";` near the top of `Code.gs` and paste your sheet's link between the quotes. (Keep the link out of the public repo; only paste it in the editor.)
+2. Make sure the account running the script can open the sheet (if someone else owns it, share it with that account, view access is enough).
+3. Run **setup** again and allow the new access (Google Sheets and Drive, read-only). It adds a 10-minute check.
+
+From then on: edit the sheet, and within 10 minutes the site's student list matches. The first tab is read. Columns: Email, Name, Grade, Birthday, StuCo, Club leader. Under StuCo put "yes" or the person's position (e.g. Treasurer); leave it blank for everyone else.
+
+- People on your approved email list (Members page) keep council access even if they're not in the sheet.
+- Positions, invites and sign-ins already saved are kept.
+- If the sheet suddenly has less than half the people, the sync adds and updates but removes nobody, and the Members page warns you. If it has no rows with an email, it stops and changes nothing.
+- Members → President controls shows "Synced from your Google Sheet: N people, last change picked up …".
+
 ## Phone notifications (optional)
 
 1. Firebase console → **Project settings → Cloud Messaging**. Under **Web configuration → Web Push certificates**, click **Generate key pair** and copy the key.
