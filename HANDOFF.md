@@ -40,7 +40,7 @@ git switch -c <branch>
 python3 tools/build_site.py
 git add -A && git commit -m "…"      # end messages with the Co-Authored-By line
 git push origin <branch> && gh pr create --base main
-# the owner approves and merges; the site updates a couple of minutes later
+gh pr merge --merge   # the site updates a couple of minutes later
 ```
 
 - The live site updates within a minute or two. Check with `curl -s https://marcusvance948.github.io/Atlas/ | grep -c <new function name>`.
