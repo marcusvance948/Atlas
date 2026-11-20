@@ -77,7 +77,7 @@ gh pr merge --merge   # the site updates a couple of minutes later
 
 ## Council votes
 
-`#cvotes` (council menu: Votes; `cvotesView`, `cvCard`, `cvForm`). One `cvotes/<id>` doc per vote with phase `ideas` → `voting` → `closed`. `ideas`, `votes` (uid → [idea keys]) and `notes` are maps so merge-updates from different members don't collide; removing an idea blanks its text. Each member picks up to `picks`. Only the starter or the president changes the phase or deletes the vote (Delete shows at every stage). Rule: `cvotes` read/write `isCouncil()`.
+`#cvotes` (council menu: Votes; `cvotesView`, `cvCard`, `cvForm`). One `cvotes/<id>` doc per vote with phase `ideas` → `voting` → `closed`. `ideas`, `votes` (uid → [idea keys]) and `notes` are maps so merge-updates from different members don't collide; removing an idea blanks its text. Typing an idea that's already listed (ignoring case and punctuation, `cvNorm`) adds your name to it (`also`: uid → name) instead of a duplicate. Each member picks up to `picks`. Only the starter or the president changes the phase or deletes the vote (Delete shows at every stage). Rule: `cvotes` read/write `isCouncil()`.
 
 ## Permissions by position
 
