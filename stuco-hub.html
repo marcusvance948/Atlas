@@ -1130,7 +1130,9 @@ function accessExplain(){if(!window.__signIn||!me.id||canCouncil())return"";cons
   return lockedOut()?"":`You're signed in as ${em}. You're on the student list, but not marked as Student Council. If you should be, ask the president to put your position (or "yes") in the StuCo column, or add you with <b>+ Add council member by email</b>.`}
 const lockedOut=()=>!!window.__signIn&&!!CFG.rosterOnly&&!!me.id&&!RM()&&!canCouncil();
 const canJoin=()=>W()&&!!me.id&&!lockedOut();
-const allowed=v=>!!ROUTES[v]&&(council()||STUDENT_ROUTES.includes(v)||(v==="members"&&canJoin()));
+/* Members and History are for the president; Members stays open to someone still setting up their profile */
+const presOnly=v=>!isPres&&(v==="history"||(v==="members"&&isApproved(myDoc())));
+const allowed=v=>!!ROUTES[v]&&!presOnly(v)&&(council()||STUDENT_ROUTES.includes(v)||(v==="members"&&canJoin()));
 const shownView=()=>view&&allowed(view)?view:(council()?"overview":"home");
 const safeUrl=u=>/^https:\/\/[^\s"'<>]+$/i.test(u||"")?u:"";
 function nameOf(id){if(!id)return"";const m=S.members.find(x=>x.id===id);if(m&&m.name)return m.name;if(PROF[id]&&PROF[id].name)return PROF[id].name;if(id===me.id)return me.name||"You";return"Someone"}
@@ -1181,7 +1183,7 @@ function renderNav(){
   const counts={cvotes:council()?S.cvotes.filter(v=>v.phase==="voting"&&!(v.slots?Object.values(((v.dvotes||{})[me.id])||{}).some(Boolean):(((v.votes||{})[me.id])||[]).length)).length:0,planner:S.plans.filter(p=>!p.done&&planMine(p)&&p.date<=iso(addDays(new Date(),1))).length,tasks:S.tasks.filter(t=>taskState(t).status!=="done").length,proposals:S.proposals.filter(p=>p.status==="voting").length,members:isPres?S.members.filter(d=>!isApproved(d)).length:0,home:council()?pendSubs(FEED_KINDS).length:0,explore:council()?allDrafts().filter(d=>d.status==="pending").length:0,stuco:council()?allSuggestions().filter(x=>x.status==="new").length:0,play:council()?waitingClaims():0};
   const sec=ROUTES[shownView()];
   const link=([k,l,href])=>`<a href="#${href||k}" ${k===sec?'aria-current="page"':""}>${l}${counts[k]?`<span class="count">${counts[k]}</span>`:""}</a>`;
-  let h=council()?`<div class="navgroup">School site</div>${STUDENT_NAV.map(link).join("")}<div class="navgroup">Council</div>${COUNCIL_NAV.map(link).join("")}`:STUDENT_NAV.map(link).join("");
+  let h=council()?`<div class="navgroup">School site</div>${STUDENT_NAV.map(link).join("")}<div class="navgroup">Council</div>${COUNCIL_NAV.filter(([k])=>!presOnly(k)).map(link).join("")}`:STUDENT_NAV.map(link).join("");
   if(!canCouncil()&&canJoin())h+=`<a class="navsmall" href="#members">On Student Council? Set up your profile</a>`;
   $("#nav").innerHTML=h;
   const mb=$("#modeBox");mb.hidden=!canCouncil();
@@ -1248,33 +1250,41 @@ function setClaim(tid,status){const mine={...claimsOf(me.id)};if(status)mine[tid
 
 /* overview */
 function overview(){
-  const today=new Date();
-  const upcoming=S.events.filter(e=>e.date>=TODAY).sort(byDate);
+  const today=new Date(),week=iso(addDays(today,7));
+  const upcoming=S.events.filter(e=>e.date>=TODAY&&!e.removed).sort(byDate);
   const nextMeeting=upcoming.find(e=>e.type==="meeting");
   const withSt=S.tasks.map(t=>({t,st:taskState(t)}));
   const open=withSt.filter(x=>x.st.status!=="done");
-  const overdue=open.filter(x=>x.t.due&&x.t.due<TODAY);
-  const mine=open.filter(x=>x.st.owner===me.id&&me.id);
-  const voting=S.proposals.filter(p=>p.status==="voting");
-  const lastMeet=[...S.meetings].sort((a,b)=>b.date.localeCompare(a.date))[0];
+  const mine=open.filter(x=>me.id&&x.st.owner===me.id).sort((a,b)=>(a.t.due||"9").localeCompare(b.t.due||"9"));
+  const grabs=open.filter(x=>x.st.open);
+  const overdue=open.filter(x=>x.t.due&&x.t.due<TODAY&&x.st.owner!==me.id);
+  const myPlans=S.plans.filter(p=>p.title&&p.date&&!p.done&&planMine(p)&&p.date<=week).sort(planSort);
   const nothing=["members","events","tasks","bulletin","proposals","meetings"].every(c=>!S[c].length);
   let start="";
   if(isPres&&W()&&dbState!=="connecting"&&(!myDoc()||nothing))start=`<section class="start"><div><h2>Set up your council, President</h2><ol><li>${myDoc()?"✓ Your profile is set up.":"Create your president profile."}</li>${window.__signIn?`<li>On Members → President controls, paste the student list from the Google Sheet. Rows marked yes in the StuCo column become council members.</li><li>Share the site link with students.</li>`:`<li>On Members, list the email addresses of approved council members.</li><li>Share this page with council members as Editors, and with the rest of the school as Viewers.</li>`}</ol></div><div class="acts">${nothing?`<button class="btn" data-act="sample">Load a sample council</button>`:""}${myDoc()?`<a class="btn primary" href="#members">Manage members</a>`:`<button class="btn primary" data-act="join">Create my profile</button>`}</div></section>`;
-  const soon=open.filter(x=>x.t.due).sort((a,b)=>a.t.due.localeCompare(b.t.due)).concat(open.filter(x=>!x.t.due)).slice(0,5);
-  const posts=sortedPosts().slice(0,3);
-  const q=lastMeet?quorum(lastMeet):null;
+  /* what's waiting on me: votes I haven't cast, then approvals for the areas my position covers */
+  const cv=S.cvotes.filter(v=>v.phase==="voting"&&!(v.slots?Object.values(((v.dvotes||{})[me.id])||{}).some(Boolean):(((v.votes||{})[me.id])||[]).length));
+  const pv=S.proposals.filter(p=>p.status==="voting"&&!(p.votes||{})[me.id]);
+  const toAccept=mine.filter(x=>!x.st.accepted&&x.st.status==="todo");
+  const n=(k,one,many)=>`${k} ${k===1?one:many}`;
+  const needs=[
+    [cv.length,"#cvotes",n(cv.length,"council vote","council votes")+" waiting for your pick",cv.map(v=>v.title).join(", ")],
+    [pv.length,"#proposals",n(pv.length,"proposal","proposals")+" waiting for your vote",pv.map(p=>p.title).join(", ")],
+    [toAccept.length,"#tasks",n(toAccept.length,"task","tasks")+" assigned to you to accept",toAccept.map(x=>x.t.title).join(", ")],
+    [capOK("approve")?pendSubs(FEED_KINDS).length:0,"#home",n(pendSubs(FEED_KINDS).length,"student post","student posts")+" to approve",""],
+    [capOK("approve")?allDrafts().filter(d=>d.status==="pending").length:0,"#clubs","Club updates to approve",""],
+    [capOK("polls")?allSuggestions().filter(x=>x.status==="new").length:0,"#suggestions","New student feedback to answer",""],
+    [capOK("games")?waitingClaims():0,"#play","Challenge claims to confirm",""]].filter(r=>r[0]);
   const taskLi=x=>`<li><span class="pri ${x.t.priority||"normal"}" style="margin-top:8px"></span><div class="grow"><div class="title">${esc(x.t.title)}</div><div class="sub parts">${who(x.st.owner,"Open to anyone")}${dueText(x.t,x.st)}</div></div>${statusChip(x.t,x.st)}</li>`;
-  return head(today.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"}),me.id&&amMember()?`Welcome back, ${esc((nameOf(me.id)||"").split(" ")[0]||"friend")}`:"This week in council")+
-  `<div class="summary"><span>Next meeting <b>${nextMeeting?esc(longd(nextMeeting.date)):"not scheduled"}</b></span><span><b>${open.length}</b> open tasks</span><span><b>${overdue.length}</b> overdue</span><span><b>${voting.length}</b> ${voting.length===1?"proposal":"proposals"} open for vote</span><span><b>${roster().length}</b> members</span></div>`+settleAlert()+start+
-  (mine.length?`<section class="panel"><h2>Your tasks <a href="#tasks">Open the board</a></h2><ul class="list">${mine.map(taskLi).join("")}</ul></section>`:"")+
+  const meetTxt=nextMeeting?`${nextMeeting.date===TODAY?"Today":esc(longd(nextMeeting.date))}${nextMeeting.time?", "+esc(fmtTime(nextMeeting.time)):""}${nextMeeting.location?", "+esc(nextMeeting.location):""}`:"not scheduled";
+  const acts=(me.id&&!isPres&&myDoc()?`<button class="btn" data-act="edit-profile">Edit my profile</button>`:"")+(canAct()?`<button class="btn primary" data-act="plan-add">+ Add to the calendar</button>`:"");
+  return head(today.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"}),me.id&&amMember()?`Welcome back, ${esc((nameOf(me.id)||"").split(" ")[0]||"friend")}`:"This week in council",acts)+
+  `<div class="summary"><span>Next meeting <b>${meetTxt}</b></span><span><b>${needs.reduce((t,r)=>t+r[0],0)}</b> waiting on you</span><span><b>${mine.length+myPlans.length}</b> on your list this week</span><span><b>${grabs.length}</b> open to pick up</span></div>`+settleAlert()+start+
+  `<section class="panel"><h2>Needs you</h2>${needs.length?`<ul class="list">${needs.map(([k,href,t,sub])=>`<li><span class="count" style="margin-top:2px">${k}</span><div class="grow"><a class="title" href="${href}">${t}</a>${sub?`<div class="sub">${esc(sub)}</div>`:""}</div><a class="btn sm" href="${href}">Open</a></li>`).join("")}</ul>`:`<p class="sub" style="margin:10px 0 0">You're all caught up. Nothing is waiting on you.</p>`}</section>`+
+  `<section class="panel"><h2>Your list this week <a href="#planner">Open the council calendar</a></h2>${mine.length||myPlans.length?`${myPlans.length?`<ul class="list plans">${myPlans.map(p=>planItem(p,true)).join("")}</ul>`:""}${mine.length?`<ul class="list">${mine.map(taskLi).join("")}</ul>`:""}`:`<p class="sub" style="margin:10px 0 0">Nothing due from you in the next 7 days.${grabs.length?" Pick up an open task below.":""}</p>`}</section>`+
   `<div class="grid2">
-    <section class="panel"><h2>Coming up <a href="#calendar">Open calendar</a></h2>${upcoming.length?`<ul class="list">${upcoming.slice(0,5).map(evRow).join("")}</ul>`:`<div style="margin-top:12px">${empty("Nothing on the calendar","Add meetings, school events and deadlines.","add-event","Add an event")}</div>`}</section>
-    <section class="panel"><h2>Tasks due soon <a href="#tasks">See all tasks</a></h2>${soon.length?`<ul class="list">${soon.map(taskLi).join("")}</ul>`:`<div style="margin-top:12px">${empty("No open tasks",isPres?"Assign work to council members to track it here.":"The president hasn't assigned any tasks yet.","add-task","Assign a task",isPres&&W())}</div>`}</section>
-    <section class="panel"><h2>Latest on the bulletin <a href="#bulletin">Read the bulletin</a></h2>${posts.length?`<ul class="list">${posts.map(p=>`<li><div class="grow"><div class="title">${esc(p.title)}</div><div class="sub parts"><span>${esc(p.tag||"Announcement")}</span><span>${esc(short(p.date))}</span></div></div></li>`).join("")}</ul>`:`<div style="margin-top:12px">${empty("No posts yet","Share announcements with the school.","add-post","Write a post")}</div>`}</section>
-    <section class="panel"><h2>Proposals and attendance <a href="#proposals">See proposals</a></h2>
-      ${voting.length?`<ul class="list">${voting.map(p=>{const t=tally(p);return`<li><div class="grow"><div class="title">${esc(p.title)}</div><div class="sub">Aye ${t.aye}, nay ${t.nay}, abstain ${t.abstain}</div></div><span class="chip accent">Vote open</span></li>`}).join("")}</ul>`:`<p class="sub" style="margin:10px 0 0">No proposals are open for a vote.</p>`}
-      ${lastMeet?`<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px"><div class="sub">Last roll call, ${esc(longd(lastMeet.date))}</div><div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap"><span class="title">${q.here} of ${q.total} present</span><span class="chip ${q.met?"good":"bad"}">${q.met?"Quorum met":"No quorum"}</span></div></div>`:""}
-    </section>
+    <section class="panel"><h2>Coming up this week <a href="#calendar">Open events</a></h2>${upcoming.filter(e=>e.date<=week).length?`<ul class="list">${upcoming.filter(e=>e.date<=week).map(evRow).join("")}</ul>`:`<p class="sub" style="margin:10px 0 0">Nothing on the school calendar in the next 7 days.${upcoming[0]?` Next: ${esc(upcoming[0].title)}, ${esc(longd(upcoming[0].date))}.`:""}</p>`}</section>
+    <section class="panel"><h2>Open tasks <a href="#tasks">See all tasks</a></h2>${grabs.length||overdue.length?`<ul class="list">${[...overdue,...grabs.filter(x=>!overdue.includes(x))].slice(0,6).map(taskLi).join("")}</ul>`:`<div style="margin-top:12px">${empty("No open or overdue tasks","Open tasks anyone can pick up, and overdue ones, show here.","add-task","Assign a task",W()&&capOK("tasks"))}</div>`}</section>
   </div>`;
 }
 function evRow(e){return`<li>${datebox(e.date)}<div class="grow"><div class="title">${esc(e.title)}</div><div class="sub">${[fmtTime(e.time),e.location].filter(Boolean).map(esc).join(", ")||"&nbsp;"}</div>${e.change?`<div class="changenote">Changed: ${esc(e.change)}</div>`:""}${e.signup&&e.signup!=="none"&&e.date>=TODAY?`<a class="sub" href="#events">${esc(label(SIGNUP_KINDS,e.signup))} on the Events page</a>`:""}</div><span class="chip ${esc(e.type)}">${label(EV_TYPES,e.type)}</span>${canAct()?`<button class="ib" data-act="edit-event" data-id="${e.id}" aria-label="Edit ${esc(e.title)}">✎</button>`:""}</li>`}
