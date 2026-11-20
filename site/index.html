@@ -2846,11 +2846,12 @@ function scheduleChanges(){const in30=iso(addDays(new Date(),30)),ago7=iso(addDa
 const CV_PHASE=[["ideas","Collecting ideas"],["voting","Voting"],["closed","Results"]];
 const cvIdeas=v=>Object.entries(v.ideas||{}).map(([k,x])=>({...x,key:k})).filter(x=>x&&x.text).sort((a,b)=>(a.at||"").localeCompare(b.at||""));
 function cvTally(v){const t={};for(const ks of Object.values(v.votes||{}))(ks||[]).forEach(k=>t[k]=(t[k]||0)+1);return t}
+const cvNorm=t=>String(t||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 const cvKey=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 function cvCard(v){
   const ideas=cvIdeas(v),phase=v.phase||"ideas",mine=(v.votes||{})[me.id]||[],k=Number(v.picks)||1,t=cvTally(v),voters=Object.values(v.votes||{}).filter(x=>(x||[]).length).length,owner=v.by===me.id||isPres,can=W()&&council();
   let body="";
-  if(phase==="ideas")body=`<ul class="cv-ideas">${ideas.map(x=>`<li><span>${esc(x.text)}</span><span class="sub">${esc(x.name||"")}</span>${can&&(x.by===me.id||owner)?`<button class="ib" data-act="cv-rm" data-id="${v.id}" data-k="${esc(x.key)}" aria-label="Remove ${esc(x.text)}">×</button>`:""}</li>`).join("")||`<li class="sub">No ideas yet. Add the first one.</li>`}</ul>
+  if(phase==="ideas")body=`<ul class="cv-ideas">${ideas.map(x=>`<li><span>${esc(x.text)}</span><span class="sub">${esc([x.name,...Object.values(x.also||{})].filter(Boolean).join(", "))}</span>${can&&(x.by===me.id||owner)?`<button class="ib" data-act="cv-rm" data-id="${v.id}" data-k="${esc(x.key)}" aria-label="Remove ${esc(x.text)}">×</button>`:""}</li>`).join("")||`<li class="sub">No ideas yet. Add the first one.</li>`}</ul>
     ${can?`<div class="reply-form"><input id="cvi-${v.id}" aria-label="Your idea" placeholder="Add an idea" maxlength="120"><button class="btn sm" data-act="cv-add" data-id="${v.id}">Add</button></div>`:""}
     ${can&&owner?`<div class="toolbar"><button class="btn primary" data-act="cv-phase" data-id="${v.id}" data-to="voting" ${ideas.length<2?"disabled":""}>Start voting</button><span class="sub">Each member will pick ${k===1?"one":k}.</span></div>`:""}`;
   else if(phase==="voting")body=`<p class="sub" style="margin:0">Pick ${k===1?"one":"up to "+k}. You've picked ${mine.length}. ${voters} member${voters===1?" has":"s have"} voted.</p>
@@ -3393,7 +3394,11 @@ document.addEventListener("click",async e=>{
     case"room-cancel":{const d=S.bookings.find(x=>x.id===b.dataset.uid);if(!d)return;const it={...d.items};delete it[id];return save(()=>db.doc("bookings/"+d.id).set({items:it}),"Booking cancelled")}
     case"perms-save":{const P={};document.querySelectorAll("table.perms input[data-role]").forEach(el=>{(P[el.dataset.role]=P[el.dataset.role]||[]);if(el.checked)P[el.dataset.role].push(el.dataset.cap)});return save(()=>cfgSet(c=>{c.perms=P}),"Permissions saved",["changed who can do what","settings",""])}
     case"cv-new":return cvForm();
-    case"cv-add":{const inp=$("#cvi-"+id),t=inp.value.trim();if(!t){inp.focus();return}inp.value="";return save(()=>col("cvotes").doc(id).update({ideas:{["i"+cvKey()]:{text:t.slice(0,120),by:me.id,name:myName(),at:new Date().toISOString()}}}))}
+    case"cv-add":{const inp=$("#cvi-"+id),t=inp.value.trim();if(!t){inp.focus();return}inp.value="";
+      /* same idea typed again (ignoring case, spaces, punctuation): count it as support instead of a duplicate */
+      const v=S.cvotes.find(x=>x.id===id),same=v&&cvIdeas(v).find(x=>cvNorm(x.text)===cvNorm(t));
+      if(same){if(same.by===me.id||(same.also||{})[me.id])return toast("That idea is already on the list");return save(()=>col("cvotes").doc(id).update({ideas:{[same.key]:{also:{[me.id]:myName()}}}}),"Already on the list. Your name was added to it.")}
+      return save(()=>col("cvotes").doc(id).update({ideas:{["i"+cvKey()]:{text:t.slice(0,120),by:me.id,name:myName(),at:new Date().toISOString()}}}))}
     case"cv-rm":return save(()=>col("cvotes").doc(id).update({ideas:{[b.dataset.k]:{text:""}}}),"Idea removed");
     case"cv-vote":{const v=S.cvotes.find(x=>x.id===id);if(!v)return;const k=Number(v.picks)||1,key=b.dataset.k;let mine=[...(((v.votes||{})[me.id])||[])];
       if(mine.includes(key))mine=mine.filter(x=>x!==key);else if(k===1)mine=[key];else if(mine.length>=k){toast(`You can pick ${k}. Unpick one first.`);return}else mine.push(key);
