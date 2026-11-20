@@ -78,6 +78,8 @@ service cloud.firestore {
     match /members/{uid} { allow read: if member(); allow write: if isOwner() || isSelf(uid); }
     // Council calendar: a shared checklist every council member can add to, edit and check off
     match /plans/{id}    { allow read, write: if isCouncil(); }
+    // Council votes: every council member adds ideas, votes and leaves feedback
+    match /cvotes/{id}   { allow read, write: if isCouncil(); }
     match /tasks/{id}    { allow read: if member(); allow write: if hasCap('tasks'); }
     match /claims/{uid}  { allow read: if member(); allow write: if isOwner() || (isSelf(uid) && isCouncil()); }
 
