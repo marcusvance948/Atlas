@@ -21,7 +21,8 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function myEmail() { return request.auth.token.email.lower(); }
     function rosterPath() { return /databases/$(database)/documents/roster/$(myEmail()); }
-    function onRoster() { return signedIn() && request.auth.token.email != null && exists(rosterPath()); }
+    // email_verified: stops someone claiming a student's email through an unverified sign-in method.
+    function onRoster() { return signedIn() && request.auth.token.email != null && request.auth.token.email_verified == true && exists(rosterPath()); }
     function me() { return get(rosterPath()).data; }
     function cfgPath() { return /databases/$(database)/documents/config/access; }
     function access() { return exists(cfgPath()) ? get(cfgPath()).data : {}; }
@@ -54,7 +55,7 @@ service cloud.firestore {
 
     // The student list: each person can read only their own row
     match /roster/{email} {
-      allow read: if isCouncil() || (signedIn() && request.auth.token.email != null && email == myEmail());
+      allow read: if isCouncil() || (signedIn() && request.auth.token.email_verified == true && email == myEmail());
       allow write: if isOwner();
     }
 
@@ -116,13 +117,20 @@ service cloud.firestore {
     match /bookings/{uid}   { allow read: if member(); allow write: if isSelf(uid) || hasCap('lost'); }
     // Lost and found items show right away; the poster or council marks them returned
     match /lostfound/{uid}   { allow read: if member(); allow write: if isSelf(uid) || hasCap('lost'); }
-    match /profiles/{uid} { allow read: if member(); allow write: if signedIn() && request.auth.uid == uid; }
-    match /private/{uid}  { allow read: if isOwner() || (signedIn() && request.auth.uid == uid); allow write: if signedIn() && request.auth.uid == uid; }
+    match /profiles/{uid} { allow read: if member(); allow write: if isSelf(uid) && request.resource.data.get('name', '').size() < 100 && request.resource.data.get('photo', '').size() < 2000; }
+    match /private/{uid}  { allow read: if isOwner() || (signedIn() && request.auth.uid == uid); allow write: if isSelf(uid) && request.resource.data.size() < 5; }
 
     // Council only
     match /proposals/{id} { allow read: if isCouncil(); allow write: if hasCap('proposals'); }
     match /meetings/{id}  { allow read: if isCouncil(); allow write: if hasCap('proposals'); }
-    match /history/{id}   { allow read, write: if isCouncil(); }
+    // History is append-only: council can add entries but not edit or erase them (only the president can).
+    match /history/{id}   {
+      allow read, create: if isCouncil();
+      allow update: if isOwner() || (isCouncil() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['entries'])
+                      && request.resource.data.entries.diff(resource.data.get('entries', {})).removedKeys().size() == 0
+                      && request.resource.data.entries.diff(resource.data.get('entries', {})).changedKeys().size() == 0);
+      allow delete: if isOwner();
+    }
     match /admin/{id}     { allow read, write: if isOwner(); }
   }
 }
