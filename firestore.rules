@@ -21,8 +21,7 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function myEmail() { return request.auth.token.email.lower(); }
     function rosterPath() { return /databases/$(database)/documents/roster/$(myEmail()); }
-    // email_verified: stops someone claiming a student's email through an unverified sign-in method.
-    function onRoster() { return signedIn() && request.auth.token.email != null && request.auth.token.email_verified == true && exists(rosterPath()); }
+    function onRoster() { return signedIn() && request.auth.token.email != null && exists(rosterPath()); }
     function me() { return get(rosterPath()).data; }
     function cfgPath() { return /databases/$(database)/documents/config/access; }
     function access() { return exists(cfgPath()) ? get(cfgPath()).data : {}; }
@@ -55,7 +54,7 @@ service cloud.firestore {
 
     // The student list: each person can read only their own row
     match /roster/{email} {
-      allow read: if isCouncil() || (signedIn() && request.auth.token.email_verified == true && email == myEmail());
+      allow read: if isCouncil() || (signedIn() && request.auth.token.email != null && email == myEmail());
       allow write: if isOwner();
     }
 
