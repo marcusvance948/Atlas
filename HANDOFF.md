@@ -76,7 +76,7 @@ git push origin <branch> && gh pr create --base main
 
 ## Council votes
 
-`#cvotes` (council menu: Votes; `cvotesView`, `cvCard`, `cvForm`). One `cvotes/<id>` doc per vote with phase `ideas` → `voting` → `closed`. `ideas`, `votes` (uid → [idea keys]) and `notes` are maps so merge-updates from different members don't collide; removing an idea blanks its text. Each member picks up to `picks`. Only the starter or the president changes the phase. Rule: `cvotes` read/write `isCouncil()`.
+`#cvotes` (council menu: Votes; `cvotesView`, `cvCard`, `cvForm`). One `cvotes/<id>` doc per vote with phase `ideas` → `voting` → `closed`. `ideas`, `votes` (uid → [idea keys]) and `notes` are maps so merge-updates from different members don't collide; removing an idea blanks its text. Each member picks up to `picks`. Only the starter or the president changes the phase. **Vote by day** ("Choose an idea for each day" when starting): `slots` (day names) and `dvotes` (uid → {slot index: idea key}); `cvAssign` gives each day its most-picked idea, biggest counts placed first, an idea wins only one day. Rule: `cvotes` read/write `isCouncil()`.
 
 ## Permissions by position
 

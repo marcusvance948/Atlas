@@ -929,6 +929,7 @@ table.perms th{font-size:12px;white-space:normal;min-width:90px;vertical-align:b
 .cv-ideas li span:first-child{flex:1;font-weight:600;overflow-wrap:anywhere}
 .cv-res{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px}
 .cv-res li{display:flex;justify-content:space-between;gap:10px;padding:6px 10px}
+.cv-days{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}.cv-days label{display:flex;flex-direction:column;gap:4px;font-weight:600}.cv-sched li span b{margin-right:8px}
 .cv-res li.win{background:var(--warn-soft);font-weight:700;box-shadow:inset 4px 0 0 var(--rail)}
 .cv-notes summary{cursor:pointer;font-weight:700;font-size:14px}
 .cv-notes{display:flex;flex-direction:column;gap:6px}
@@ -1209,7 +1210,7 @@ function setStatus(s){
 
 /* ---------- render ---------- */
 function renderNav(){
-  const counts={cvotes:council()?S.cvotes.filter(v=>v.phase==="voting"&&!(((v.votes||{})[me.id])||[]).length).length:0,planner:S.plans.filter(p=>!p.done&&planMine(p)&&p.date<=iso(addDays(new Date(),1))).length,tasks:S.tasks.filter(t=>taskState(t).status!=="done").length,proposals:S.proposals.filter(p=>p.status==="voting").length,members:isPres?S.members.filter(d=>!isApproved(d)).length:0,home:council()?pendSubs(FEED_KINDS).length:0,explore:council()?allDrafts().filter(d=>d.status==="pending").length:0,stuco:council()?allSuggestions().filter(x=>x.status==="new").length:0,play:council()?waitingClaims():0};
+  const counts={cvotes:council()?S.cvotes.filter(v=>v.phase==="voting"&&!(v.slots?Object.values(((v.dvotes||{})[me.id])||{}).some(Boolean):(((v.votes||{})[me.id])||[]).length)).length:0,planner:S.plans.filter(p=>!p.done&&planMine(p)&&p.date<=iso(addDays(new Date(),1))).length,tasks:S.tasks.filter(t=>taskState(t).status!=="done").length,proposals:S.proposals.filter(p=>p.status==="voting").length,members:isPres?S.members.filter(d=>!isApproved(d)).length:0,home:council()?pendSubs(FEED_KINDS).length:0,explore:council()?allDrafts().filter(d=>d.status==="pending").length:0,stuco:council()?allSuggestions().filter(x=>x.status==="new").length:0,play:council()?waitingClaims():0};
   const sec=ROUTES[shownView()];
   const link=([k,l,href])=>`<a href="#${href||k}" ${k===sec?'aria-current="page"':""}>${l}${counts[k]?`<span class="count">${counts[k]}</span>`:""}</a>`;
   let h=council()?`<div class="navgroup">School site</div>${STUDENT_NAV.map(link).join("")}<div class="navgroup">Council</div>${COUNCIL_NAV.map(link).join("")}`:STUDENT_NAV.map(link).join("");
@@ -2836,16 +2837,28 @@ function scheduleChanges(){const in30=iso(addDays(new Date(),30)),ago7=iso(addDa
 const CV_PHASE=[["ideas","Collecting ideas"],["voting","Voting"],["closed","Results"]];
 const cvIdeas=v=>Object.entries(v.ideas||{}).map(([k,x])=>({...x,key:k})).filter(x=>x&&x.text).sort((a,b)=>(a.at||"").localeCompare(b.at||""));
 function cvTally(v){const t={};for(const ks of Object.values(v.votes||{}))(ks||[]).forEach(k=>t[k]=(t[k]||0)+1);return t}
+// vote by day: each member picks a theme per day; results give each day its most-picked theme, and a theme wins only one day (biggest counts are placed first)
+const cvVoted=v=>v.slots?Object.values(v.dvotes||{}).filter(d=>Object.values(d||{}).some(Boolean)):Object.values(v.votes||{}).filter(x=>(x||[]).length);
+function cvAssign(v){const c=v.slots.map(()=>({}));for(const d of Object.values(v.dvotes||{}))for(const[i,k]of Object.entries(d||{}))if(k&&c[i])c[i][k]=(c[i][k]||0)+1;
+  const ok=new Set(cvIdeas(v).map(x=>x.key)),pairs=[];c.forEach((m,i)=>{for(const[k,n]of Object.entries(m))if(ok.has(k))pairs.push({i,k,n})});pairs.sort((a,b)=>b.n-a.n);
+  const out=v.slots.map(()=>null),used=new Set();for(const x of pairs)if(!out[x.i]&&!used.has(x.k)){out[x.i]=x;used.add(x.k)}return out}
 const cvKey=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 function cvCard(v){
-  const ideas=cvIdeas(v),phase=v.phase||"ideas",mine=(v.votes||{})[me.id]||[],k=Number(v.picks)||1,t=cvTally(v),voters=Object.values(v.votes||{}).filter(x=>(x||[]).length).length,owner=v.by===me.id||isPres,can=W()&&council();
+  const ideas=cvIdeas(v),phase=v.phase||"ideas",mine=(v.votes||{})[me.id]||[],k=Number(v.picks)||1,t=cvTally(v),voters=cvVoted(v).length,days=v.slots,myd=((v.dvotes||{})[me.id])||{},owner=v.by===me.id||isPres,can=W()&&council();
   let body="";
   if(phase==="ideas")body=`<ul class="cv-ideas">${ideas.map(x=>`<li><span>${esc(x.text)}</span><span class="sub">${esc(x.name||"")}</span>${can&&(x.by===me.id||owner)?`<button class="ib" data-act="cv-rm" data-id="${v.id}" data-k="${esc(x.key)}" aria-label="Remove ${esc(x.text)}">×</button>`:""}</li>`).join("")||`<li class="sub">No ideas yet. Add the first one.</li>`}</ul>
     ${can?`<div class="reply-form"><input id="cvi-${v.id}" aria-label="Your idea" placeholder="Add an idea" maxlength="120"><button class="btn sm" data-act="cv-add" data-id="${v.id}">Add</button></div>`:""}
-    ${can&&owner?`<div class="toolbar"><button class="btn primary" data-act="cv-phase" data-id="${v.id}" data-to="voting" ${ideas.length<2?"disabled":""}>Start voting</button><span class="sub">Each member will pick ${k===1?"one":k}.</span></div>`:""}`;
+    ${can&&owner?`<div class="toolbar"><button class="btn primary" data-act="cv-phase" data-id="${v.id}" data-to="voting" ${ideas.length<2?"disabled":""}>Start voting</button><span class="sub">${days?"Each member will choose a theme for each day.":`Each member will pick ${k===1?"one":k}.`}</span></div>`:""}`;
+  else if(phase==="voting"&&days)body=`<p class="sub" style="margin:0">Choose a theme for each day. A theme can only win one day, so pick your favorite for every day. ${voters} member${voters===1?" has":"s have"} voted.</p>
+    <div class="cv-days">${days.map((d,i)=>`<label><span>${esc(d)}</span><select data-cvday="${i}" data-id="${v.id}" ${can?"":"disabled"}><option value="">Choose a theme</option>${ideas.map(x=>`<option value="${esc(x.key)}" ${myd[i]===x.key?"selected":""}>${esc(x.text)}</option>`).join("")}</select></label>`).join("")}</div>
+    ${can&&owner?`<div class="toolbar"><button class="btn primary" data-act="cv-phase" data-id="${v.id}" data-to="closed">Close voting and show results</button><button class="btn ghost" data-act="cv-phase" data-id="${v.id}" data-to="ideas">Back to ideas</button></div>`:""}`;
   else if(phase==="voting")body=`<p class="sub" style="margin:0">Pick ${k===1?"one":"up to "+k}. You've picked ${mine.length}. ${voters} member${voters===1?" has":"s have"} voted.</p>
     <div class="opts">${ideas.map(x=>`<button class="opt" data-act="cv-vote" data-id="${v.id}" data-k="${esc(x.key)}" aria-pressed="${mine.includes(x.key)}" ${can?"":"disabled"}><span class="optlabel">${esc(x.text)}</span>${mine.includes(x.key)?`<span class="optpct">Your pick</span>`:""}</button>`).join("")}</div>
     ${can&&owner?`<div class="toolbar"><button class="btn primary" data-act="cv-phase" data-id="${v.id}" data-to="closed">Close voting and show results</button><button class="btn ghost" data-act="cv-phase" data-id="${v.id}" data-to="ideas">Back to ideas</button></div>`:""}`;
+  else if(days){const a=cvAssign(v),txt=Object.fromEntries(ideas.map(x=>[x.key,x.text]));
+    body=`<ol class="cv-res cv-sched">${days.map((d,i)=>`<li class="${a[i]?"win":""}"><span><b>${esc(d)}</b> ${a[i]?esc(txt[a[i].k]):`<span class="sub">No votes</span>`}</span><b>${a[i]?a[i].n:""}</b></li>`).join("")}</ol>
+    <p class="sub" style="margin:0">${voters} voted. Each day gets the theme most people chose for it. A theme only wins one day: the biggest votes are placed first.</p>
+    ${can&&owner?`<div class="toolbar"><button class="btn ghost" data-act="cv-phase" data-id="${v.id}" data-to="voting">Reopen voting</button><button class="btn ghost danger" data-act="cv-del" data-id="${v.id}">Delete</button></div>`:""}`}
   else{const ranked=ideas.map(x=>({...x,n:t[x.key]||0})).sort((a,b)=>b.n-a.n),cut=(ranked[k-1]||{}).n||0,tie=cut>0&&ranked.length>k&&(ranked[k]||{}).n===cut;
     body=`<ol class="cv-res">${ranked.map((x,i)=>`<li class="${x.n>0&&(i<k||x.n===cut)?"win":""}"><span>${esc(x.text)}</span><b>${x.n}</b></li>`).join("")}</ol>
     <p class="sub" style="margin:0">${voters} voted. The top ${k} ${k===1?"is":"are"} highlighted${tie?". There's a tie at the cutoff, so more than "+k+" are highlighted":""}.</p>
@@ -2858,8 +2871,9 @@ function cvotesView(){const vs=[...S.cvotes].sort((a,b)=>(b.created||"").localeC
   (open.length?`<div class="polls">${open.map(cvCard).join("")}</div>`:empty("Nothing open right now","Start one: collect Spirit Week day ideas from everyone, then vote on the five you want.","cv-new","Start a council vote",W()&&council()))+
   (done.length?`<section class="panel"><h2>Past votes</h2><div class="polls" style="margin-top:12px">${done.map(cvCard).join("")}</div></section>`:"")}
 function cvForm(){openForm({title:"New council vote",submitLabel:"Start collecting ideas",note:"Every council member can add ideas and feedback. When you're ready, start the vote.",
-  fields:[{id:"title",label:"What are we deciding?",required:true,full:true,placeholder:"e.g. Spirit Week days"},{id:"picks",label:"How many does each member pick?",type:"number"},{id:"details",label:"Details (optional)",type:"textarea",placeholder:"e.g. We need five days, Monday to Friday."}],values:{picks:5},
-  submit:v=>save(()=>col("cvotes").add({title:v.title,details:v.details,picks:Math.max(1,Math.round(Number(v.picks)||1)),phase:"ideas",ideas:{},votes:{},notes:{},by:me.id,byName:myName(),created:new Date().toISOString()}),"Council vote started",["started a council vote:","settings",v.title])})}
+  fields:[{id:"title",label:"What are we deciding?",required:true,full:true,placeholder:"e.g. Spirit Week days"},{id:"mode",label:"How does everyone vote?",type:"select",full:true,options:[["pick","Pick their favorite ideas"],["days","Choose an idea for each day"]]},{id:"picks",label:"Pick their favorites: how many each?",type:"number"},{id:"days",label:"Choose for each day: the days",full:true,placeholder:"Monday, Tuesday, Wednesday, Thursday, Friday"},{id:"details",label:"Details (optional)",type:"textarea",placeholder:"e.g. We need five days, Monday to Friday."}],values:{picks:5,mode:"pick",days:"Monday, Tuesday, Wednesday, Thursday, Friday"},
+  submit:v=>{const slots=v.mode==="days"?v.days.split(/[,\n]/).map(x=>x.trim().slice(0,40)).filter(Boolean).slice(0,14):null;if(v.mode==="days"&&slots.length<2){$("#merr").textContent="List at least two days, separated by commas.";return false}
+  return save(()=>col("cvotes").add({title:v.title,details:v.details,...(slots?{slots,dvotes:{}}:{}),picks:Math.max(1,Math.round(Number(v.picks)||1)),phase:"ideas",ideas:{},votes:{},notes:{},by:me.id,byName:myName(),created:new Date().toISOString()}),"Council vote started",["started a council vote:","settings",v.title])}})}
 
 /* ---------- proposals ---------- */
 function tally(p){const v=p.votes||{},t={aye:0,nay:0,abstain:0};for(const k in v)if(t[v[k]]!=null&&isApproved(S.members.find(m=>m.id===k)))t[v[k]]++;return t}
@@ -3545,7 +3559,7 @@ document.addEventListener("click",async e=>{
     case"sample":b.disabled=true;return loadSample();
   }
 });
-document.addEventListener("change",e=>{if(e.target.id==="roomDate"){roomDate=e.target.value||TODAY;render();return}if(e.target.id==="propSt"){propSt=e.target.value;return render()}if(e.target.id==="annTag"){annTag=e.target.value;const l=$("#annList");if(l)l.innerHTML=annList();return}if(e.target.id==="ohDay"){ohDay=e.target.value;const l=$("#ohList");if(l)l.innerHTML=ohList();return}
+document.addEventListener("change",e=>{if(e.target.dataset.cvday!=null){const id=e.target.dataset.id;save(()=>col("cvotes").doc(id).update({dvotes:{[me.id]:{[e.target.dataset.cvday]:e.target.value}}}));return}if(e.target.id==="roomDate"){roomDate=e.target.value||TODAY;render();return}if(e.target.id==="propSt"){propSt=e.target.value;return render()}if(e.target.id==="annTag"){annTag=e.target.value;const l=$("#annList");if(l)l.innerHTML=annList();return}if(e.target.id==="ohDay"){ohDay=e.target.value;const l=$("#ohList");if(l)l.innerHTML=ohList();return}
   if(e.target.id==="rosterOnly"){const on=e.target.checked;save(()=>cfgSet(c=>{c.rosterOnly=on}),on?"Only listed emails can join now":"Anyone who signs in can join now");return}
   if(e.target.id==="sugFilter"){sugFilter=e.target.value;render()}
   if(e.target.dataset&&e.target.dataset.sug){const t=e.target,x=allSuggestions().find(s=>s.key===t.dataset.key);save(()=>db.doc("suggestions/"+t.dataset.sug).update({items:{[t.dataset.key]:{status:t.value,reviewedBy:me.id,reviewedAt:new Date().toISOString()}}}),"Status updated",["marked as "+label(SUG_STATUS,t.value).toLowerCase()+":","suggestion",x&&x.title])}
