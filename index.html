@@ -1081,7 +1081,7 @@ const TASK_STATUS=[["todo","To do"],["doing","In progress"],["done","Done"]];
 const PRI=[["high","High"],["normal","Normal"],["low","Low"]];
 const POST_TAGS=[["Announcement","Announcement"],["Event","Event"],["Reminder","Reminder"],["Opportunity","Opportunity"],["Spirit","Spirit"],["Schedule change","Schedule change"],["Sports","Sports"],["Lunch","Lunch"]];
 const P_STAGES=[["draft","Draft"],["moved","Moved"],["seconded","Seconded"],["voting","Vote open"],["passed","Passed"],["failed","Failed"]];
-const ROLES=["President","Vice President","Secretary","Treasurer","Historian","Class Representative","Committee Chair","Member","Advisor"];
+const ROLES=["President","Vice President","Administrator","Grade Rep","Chair of Communications","Treasurer"];
 const COMMITTEES=["Events","Spirit","Fundraising","Communications","Service"];
 const ATT=[["present","Present"],["late","Late"],["absent","Absent"],["na","N/A"]];/* N/A: not elected yet, or not expected at that meeting. Old "excused" marks count as N/A. */
 const attV=(m,id)=>{const v=((m&&m.records)||{})[id]||"";return v==="excused"?"na":v};
@@ -2104,7 +2104,7 @@ function parseRoster(text){
   const out=[];
   for(const r of rows){const get=k=>idx[k]>=0?(r[idx[k]]||"").trim():"",email=get("email").toLowerCase();if(!/^[^@\s\/]+@[^@\s\/]+\.[^@\s\/]+$/.test(email))continue;
     const b=parseBday(get("bday")),e={name:get("name"),grade:(get("grade").match(/\d+/)||[""])[0],council:!!get("council")&&!/^(n|no|false|0|-)$/i.test(get("council")),clubs:get("club").split(/[;|]/).map(clubKey).filter(Boolean)};
-    if(b){e.bm=b[0];e.bd=b[1]}const pos=get("council");if(e.council&&!/^(y|yes|true|x|1|stuco|council|✓)$/i.test(pos))e.role=pos.slice(0,60);out.push([email,e])}
+    if(b){e.bm=b[0];e.bd=b[1]}const pos=get("council");if(e.council&&!/^(y|yes|true|x|1|stuco|council|✓)$/i.test(pos))e.role=(ROLES.find(r=>r.toLowerCase()===pos.trim().toLowerCase())||pos).slice(0,60);out.push([email,e])}
   return out}
 function rosterSummary(){const n=S.roster.length;if(!n)return"No list imported yet.";return`${n} people on the list: ${GRADES.map(g=>`${S.roster.filter(d=>d.grade===g).length} in Grade ${g}`).join(", ")}. ${S.roster.filter(d=>d.council).length} on StuCo, ${S.roster.filter(d=>(d.clubs||[]).length).length} club leaders.`}
 async function importRoster(){
@@ -3131,7 +3131,7 @@ function members(){
   :empty("No members yet",isPres?"Create your own profile, list your members' email addresses below, then share the page with them.":"Council members appear here once the president approves them.",isPres?"join":null,"Create my profile",isPres&&W()));
 }
 function permsPanel(){
-  const roles=[...new Set([...ROLES,...Object.values(CFG.roles||{}),...S.roster.map(d=>d.role)].filter(r=>r&&r!=="President"))],P=CFG.perms||{};
+  const roles=ROLES.filter(r=>r!=="President"),P=CFG.perms||{};
   return`<section class="panel"><h2>Who can do what <span class="sub" style="font-weight:500">Only you see this. You can always do everything.</span></h2><div class="tablewrap"><table class="perms"><thead><tr><th>Position</th>${CAPS.map(([k,l])=>`<th>${esc(l)}</th>`).join("")}</tr></thead><tbody>${roles.map((r,i)=>`<tr><td><b>${esc(r)}</b></td>${CAPS.map(([k,l])=>`<td><input type="checkbox" id="perm-${i}-${k}" data-role="${esc(r)}" data-cap="${k}" aria-label="${esc(r)}: ${esc(l)}" ${(P[r]||DEFAULT_CAPS).includes(k)?"checked":""}></td>`).join("")}</tr>`).join("")}</tbody></table></div><div class="toolbar"><button class="btn primary" data-act="perms-save">Save permissions</button><span class="sub">A member's position is the role you set on them, or the position in the StuCo column of the student list.</span></div></section>`}
 function presPanel(){
   const pend=S.members.filter(d=>!isApproved(d));resolveIds(pend.map(d=>d.id));
@@ -3279,8 +3279,8 @@ function joinForm(){
 }
 function memberForm(id){
   const d=id?S.members.find(x=>x.id===id):null,fm=d?full(d):null;
-  const fields=[...PROFILE_FIELDS.slice(0,3),{id:"role",label:"Position",required:true,list:ROLES,placeholder:"e.g. Head of Events"},...PROFILE_FIELDS.slice(3)];
-  openForm({title:d?`Edit ${d.name}`:"Add member without an account",fields,values:fm||{role:"Member"},
+  const fields=[...PROFILE_FIELDS.slice(0,3),{id:"role",label:"Position",type:"select",options:ROLES.filter(r=>r!=="President"||(fm&&fm.role==="President")).map(r=>[r,r])},...PROFILE_FIELDS.slice(3)];
+  openForm({title:d?`Edit ${d.name}`:"Add member without an account",fields,values:fm&&ROLES.includes(fm.role)?fm:{...(fm||{}),role:"Grade Rep"},
     note:d?"":"For people who won't sign in, like your advisor. They can be marked at roll call and assigned tasks, but can't accept tasks themselves.",
     submit:async vals=>{vals.role=String(vals.role||"").trim().slice(0,60)||"Member";const{role,...rest}=vals;
       if(d){const ok=await save(()=>db.doc("members/"+id).update(rest),"Saved",["edited","member",vals.name]);if(ok&&role!==fm.role)await save(()=>cfgSet(c=>{c.roles[id]=role}),null,["set role to "+role+" for","member",vals.name]);return ok}
@@ -3510,7 +3510,7 @@ const SAMPLE_COLS=["members","events","tasks","bulletin","proposals","meetings"]
 /* Council by email: puts the person on the student list as StuCo (rules and the site then treat them as council as
    soon as they sign in), adds them to the approved list, and saves their role, applied when their profile is approved. */
 function councilForm(){openForm({title:"Add a council member",submitLabel:"Add",note:"They get council view as soon as they sign in with this Google account, and their member profile is made for them with this name, grade and position.",
-  fields:[{id:"email",label:"Their Google account email",required:true,full:true,placeholder:"name@gmail.com or name@avenues.org"},{id:"name",label:"Name",required:true},{id:"role",label:"Position",required:true,list:ROLES.filter(r=>r!=="President"),placeholder:"e.g. Head of Events, Grade 10 Rep"},{id:"grade",label:"Grade",type:"select",options:[["",""],...GRADES.map(g=>[g,"Grade "+g])]}],values:{role:"Member"},
+  fields:[{id:"email",label:"Their Google account email",required:true,full:true,placeholder:"name@gmail.com or name@avenues.org"},{id:"name",label:"Name",required:true},{id:"role",label:"Position",type:"select",options:ROLES.filter(r=>r!=="President").map(r=>[r,r])},{id:"grade",label:"Grade",type:"select",options:[["",""],...GRADES.map(g=>[g,"Grade "+g])]}],values:{role:"Grade Rep"},
   submit:v=>{const email=(v.email||"").trim().toLowerCase();v.role=String(v.role||"").trim().slice(0,60)||"Member";if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("#merr").textContent="That doesn't look like an email address.";return false}
     const emails=[...new Set([...(ADMIN.emails||[]),email])];
     return save(async()=>{const cur=await db.doc("roster/"+email).get(),row=cur.exists?cur.data()||{}:{};await db.doc("roster/"+email).set({...row,name:v.name||row.name||"",grade:v.grade||row.grade||"",council:true,role:v.role,clubs:row.clubs||[],invitedAt:new Date().toISOString(),...(cur.exists?{}:{extra:true})});await db.doc("admin/access").set({...ADMIN,emails});
