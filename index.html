@@ -923,6 +923,16 @@ table.perms td{text-align:center}
 table.perms td:first-child,table.perms th:first-child{text-align:left}
 table.perms th{font-size:12px;white-space:normal;min-width:90px;vertical-align:bottom}
 
+.cv-ideas{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.cv-ideas li{display:flex;gap:10px;align-items:baseline;padding:8px 0;border-top:1px solid var(--rule)}
+.cv-ideas li:first-child{border-top:0}
+.cv-ideas li span:first-child{flex:1;font-weight:600;overflow-wrap:anywhere}
+.cv-res{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px}
+.cv-res li{display:flex;justify-content:space-between;gap:10px;padding:6px 10px}
+.cv-res li.win{background:var(--warn-soft);font-weight:700;box-shadow:inset 4px 0 0 var(--rail)}
+.cv-notes summary{cursor:pointer;font-weight:700;font-size:14px}
+.cv-notes{display:flex;flex-direction:column;gap:6px}
+
 /* history */
 .hday{font-size:17px;font-weight:800;margin-top:14px}
 .hday:first-child{margin-top:0}
@@ -1063,18 +1073,18 @@ table.perms th{font-size:12px;white-space:normal;min-width:90px;vertical-align:b
 
 <script>
 const STUDENT_NAV=[["home","Today","home"],["explore","Explore","events"],["play","Play","play"],["stuco","StuCo","stuco"]];
-const COUNCIL_NAV=[["overview","Overview"],["planner","Calendar"],["tasks","Tasks"],["proposals","Proposals"],["attendance","Attendance"],["members","Members"],["history","History"]];
-const ROUTES={home:"home",bulletin:"home",events:"explore",calendar:"explore",clubs:"explore",club:"explore",opportunities:"explore",officehours:"explore",play:"play",stuco:"stuco",suggestions:"stuco",lost:"stuco",voice:"stuco",working:"stuco",myspace:"me",overview:"overview",planner:"planner",tasks:"tasks",proposals:"proposals",attendance:"attendance",members:"members",history:"history"};
+const COUNCIL_NAV=[["overview","Overview"],["planner","Calendar"],["tasks","Tasks"],["proposals","Proposals"],["cvotes","Votes"],["attendance","Attendance"],["members","Members"],["history","History"]];
+const ROUTES={home:"home",bulletin:"home",events:"explore",calendar:"explore",clubs:"explore",club:"explore",opportunities:"explore",officehours:"explore",play:"play",stuco:"stuco",suggestions:"stuco",lost:"stuco",voice:"stuco",working:"stuco",myspace:"me",overview:"overview",cvotes:"cvotes",planner:"planner",tasks:"tasks",proposals:"proposals",attendance:"attendance",members:"members",history:"history"};
 const STUDENT_ROUTES=["home","bulletin","events","calendar","clubs","club","opportunities","officehours","play","stuco","suggestions","lost","voice","working","myspace"];
 /* old links keep working: each old page name points at where that content lives now */
 const ALIAS={hub:["home"],community:["home"],create:["home"],collabs:["home"],life:["home","sec-photos"],connect:["clubs"],explore:["events"],challenges:["play","sec-game"],dares:["play","sec-challenges"],leaderboard:["play","sec-leaderboard"]};
 let pendingScroll=null;
-const COLS=["members","events","tasks","claims","bulletin","suggestions","albums","stories","opps","polls","votes","signups","birthdays","playlists","aviators","predictions","picks","scores","clubs","clubposts","clubdrafts","posts","submissions","replies","challenges","done","lostfound","wins","years","spaces","mine","bookings","games","gamevotes","plays","gamekeys","roster","proposals","meetings","plans","history"];
-const COUNCIL_ONLY=["proposals","meetings","history","roster","gamekeys","plans"];
+const COLS=["members","events","tasks","claims","bulletin","suggestions","albums","stories","opps","polls","votes","signups","birthdays","playlists","aviators","predictions","picks","scores","clubs","clubposts","clubdrafts","posts","submissions","replies","challenges","done","lostfound","wins","years","spaces","mine","bookings","games","gamevotes","plays","gamekeys","roster","proposals","meetings","plans","cvotes","history"];
+const COUNCIL_ONLY=["proposals","meetings","history","roster","gamekeys","plans","cvotes"];
 const SCHOOL="Avenues The World School";
 const SUG_CATS=["Events","Spirit","Vending machine","Facilities","Food","Clubs","School policy","Report a problem","Other"];
 const SUG_STATUS=[["new","New"],["review","Under review"],["planned","Planned"],["done","Done"],["declined","Not this time"]];
-const S={plans:[],members:[],events:[],tasks:[],claims:[],bulletin:[],suggestions:[],albums:[],stories:[],opps:[],polls:[],votes:[],signups:[],birthdays:[],playlists:[],aviators:[],predictions:[],picks:[],scores:[],clubs:[],clubposts:[],clubdrafts:[],posts:[],submissions:[],replies:[],challenges:[],done:[],lostfound:[],wins:[],years:[],spaces:[],mine:[],bookings:[],games:[],gamevotes:[],plays:[],gamekeys:[],roster:[],proposals:[],meetings:[],history:[]};
+const S={plans:[],cvotes:[],members:[],events:[],tasks:[],claims:[],bulletin:[],suggestions:[],albums:[],stories:[],opps:[],polls:[],votes:[],signups:[],birthdays:[],playlists:[],aviators:[],predictions:[],picks:[],scores:[],clubs:[],clubposts:[],clubdrafts:[],posts:[],submissions:[],replies:[],challenges:[],done:[],lostfound:[],wins:[],years:[],spaces:[],mine:[],bookings:[],games:[],gamevotes:[],plays:[],gamekeys:[],roster:[],proposals:[],meetings:[],history:[]};
 let CFG={approved:{},roles:{},school:"",president:null}, cfgExists=false, ADMIN={emails:[]}, adminExists=false;
 const EV_TYPES=[["meeting","StuCo meeting"],["event","School event"],["dance","Dance"],["trip","Trip"],["competition","Competition or tournament"],["fundraiser","Fundraiser"],["deadline","Deadline"],["assessment","Assessment"]];
 const TASK_STATUS=[["todo","To do"],["doing","In progress"],["done","Done"]];
@@ -1199,7 +1209,7 @@ function setStatus(s){
 
 /* ---------- render ---------- */
 function renderNav(){
-  const counts={planner:S.plans.filter(p=>!p.done&&planMine(p)&&p.date<=iso(addDays(new Date(),1))).length,tasks:S.tasks.filter(t=>taskState(t).status!=="done").length,proposals:S.proposals.filter(p=>p.status==="voting").length,members:isPres?S.members.filter(d=>!isApproved(d)).length:0,home:council()?pendSubs(FEED_KINDS).length:0,explore:council()?allDrafts().filter(d=>d.status==="pending").length:0,stuco:council()?allSuggestions().filter(x=>x.status==="new").length:0,play:council()?waitingClaims():0};
+  const counts={cvotes:council()?S.cvotes.filter(v=>v.phase==="voting"&&!(((v.votes||{})[me.id])||[]).length).length:0,planner:S.plans.filter(p=>!p.done&&planMine(p)&&p.date<=iso(addDays(new Date(),1))).length,tasks:S.tasks.filter(t=>taskState(t).status!=="done").length,proposals:S.proposals.filter(p=>p.status==="voting").length,members:isPres?S.members.filter(d=>!isApproved(d)).length:0,home:council()?pendSubs(FEED_KINDS).length:0,explore:council()?allDrafts().filter(d=>d.status==="pending").length:0,stuco:council()?allSuggestions().filter(x=>x.status==="new").length:0,play:council()?waitingClaims():0};
   const sec=ROUTES[shownView()];
   const link=([k,l,href])=>`<a href="#${href||k}" ${k===sec?'aria-current="page"':""}>${l}${counts[k]?`<span class="count">${counts[k]}</span>`:""}</a>`;
   let h=council()?`<div class="navgroup">School site</div>${STUDENT_NAV.map(link).join("")}<div class="navgroup">Council</div>${COUNCIL_NAV.map(link).join("")}`:STUDENT_NAV.map(link).join("");
@@ -1237,7 +1247,7 @@ function render(){
     else if(d&&isApproved(d)&&!isEditor)banner=`<div class="banner">You're an approved council member. Ask the president to give you Editor access to this page so you can make changes.</div>`;}
   if(preview&&canCouncil())banner=`<div class="banner preview"><span>You're seeing the site the way students see it.</span><button class="btn sm" data-act="mode" data-to="council">Back to council view</button></div>`+banner;
   {const ex=accessExplain();if(ex&&(lockedOut()||shownView()==="members"||shownView()==="myspace"))banner+=`<div class="banner">${ex}</div>`}
-  const VIEWFN={planner,bulletin,events:exploreTab,calendar:exploreTab,clubs:exploreTab,club:exploreTab,opportunities:exploreTab,officehours:exploreTab,play:playPage,stuco:stucoPage,suggestions:stucoPage,lost:stucoPage,voice:stucoPage,working:stucoPage,myspace:mySpaceView,overview,tasks:()=>tasks(),proposals,attendance,members,history:historyView};
+  const VIEWFN={planner,bulletin,events:exploreTab,calendar:exploreTab,clubs:exploreTab,club:exploreTab,opportunities:exploreTab,officehours:exploreTab,play:playPage,stuco:stucoPage,suggestions:stucoPage,lost:stucoPage,voice:stucoPage,working:stucoPage,myspace:mySpaceView,overview,tasks:()=>tasks(),proposals,cvotes:cvotesView,attendance,members,history:historyView};
   if(!council()&&shownView()!=="bulletin")banner=alertBar()+banner;
   $("#main").innerHTML=banner+VIEWFN[shownView()]();
   $("#bandH1").innerHTML=pageHead.title||"";const bc=$("#bandCtx");bc.innerHTML=pageHead.context||"";bc.hidden=!pageHead.context;
@@ -2820,6 +2830,37 @@ function exploreTab(){const cur=shownView();
 function scheduleChanges(){const in30=iso(addDays(new Date(),30)),ago7=iso(addDays(new Date(),-7));
   return[...S.events.filter(e=>e.change&&evVisible(e)&&e.date>=TODAY&&e.date<=in30).map(e=>({title:e.title,text:e.change})),...S.bulletin.filter(p=>p.tag==="Schedule change"&&(p.date||"")>=ago7).map(p=>({title:p.title,text:String(p.body||"").replace(/\*\*/g,"").replace(/^\s*[-•*]\s+/gm,"").replace(/\s*\n+\s*/g," · ")}))]}
 
+/* ---------- council votes: everyone adds ideas, then everyone votes ----------
+   cvotes/<id>: ideas, votes and notes are maps keyed per idea or per member, so merge-updates from
+   different members never overwrite each other. Council only. */
+const CV_PHASE=[["ideas","Collecting ideas"],["voting","Voting"],["closed","Results"]];
+const cvIdeas=v=>Object.entries(v.ideas||{}).map(([k,x])=>({...x,key:k})).filter(x=>x&&x.text).sort((a,b)=>(a.at||"").localeCompare(b.at||""));
+function cvTally(v){const t={};for(const ks of Object.values(v.votes||{}))(ks||[]).forEach(k=>t[k]=(t[k]||0)+1);return t}
+const cvKey=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+function cvCard(v){
+  const ideas=cvIdeas(v),phase=v.phase||"ideas",mine=(v.votes||{})[me.id]||[],k=Number(v.picks)||1,t=cvTally(v),voters=Object.values(v.votes||{}).filter(x=>(x||[]).length).length,owner=v.by===me.id||isPres,can=W()&&council();
+  let body="";
+  if(phase==="ideas")body=`<ul class="cv-ideas">${ideas.map(x=>`<li><span>${esc(x.text)}</span><span class="sub">${esc(x.name||"")}</span>${can&&(x.by===me.id||owner)?`<button class="ib" data-act="cv-rm" data-id="${v.id}" data-k="${esc(x.key)}" aria-label="Remove ${esc(x.text)}">×</button>`:""}</li>`).join("")||`<li class="sub">No ideas yet. Add the first one.</li>`}</ul>
+    ${can?`<div class="reply-form"><input id="cvi-${v.id}" aria-label="Your idea" placeholder="Add an idea" maxlength="120"><button class="btn sm" data-act="cv-add" data-id="${v.id}">Add</button></div>`:""}
+    ${can&&owner?`<div class="toolbar"><button class="btn primary" data-act="cv-phase" data-id="${v.id}" data-to="voting" ${ideas.length<2?"disabled":""}>Start voting</button><span class="sub">Each member will pick ${k===1?"one":k}.</span></div>`:""}`;
+  else if(phase==="voting")body=`<p class="sub" style="margin:0">Pick ${k===1?"one":"up to "+k}. You've picked ${mine.length}. ${voters} member${voters===1?" has":"s have"} voted.</p>
+    <div class="opts">${ideas.map(x=>`<button class="opt" data-act="cv-vote" data-id="${v.id}" data-k="${esc(x.key)}" aria-pressed="${mine.includes(x.key)}" ${can?"":"disabled"}><span class="optlabel">${esc(x.text)}</span>${mine.includes(x.key)?`<span class="optpct">Your pick</span>`:""}</button>`).join("")}</div>
+    ${can&&owner?`<div class="toolbar"><button class="btn primary" data-act="cv-phase" data-id="${v.id}" data-to="closed">Close voting and show results</button><button class="btn ghost" data-act="cv-phase" data-id="${v.id}" data-to="ideas">Back to ideas</button></div>`:""}`;
+  else{const ranked=ideas.map(x=>({...x,n:t[x.key]||0})).sort((a,b)=>b.n-a.n),cut=(ranked[k-1]||{}).n||0,tie=cut>0&&ranked.length>k&&(ranked[k]||{}).n===cut;
+    body=`<ol class="cv-res">${ranked.map((x,i)=>`<li class="${x.n>0&&(i<k||x.n===cut)?"win":""}"><span>${esc(x.text)}</span><b>${x.n}</b></li>`).join("")}</ol>
+    <p class="sub" style="margin:0">${voters} voted. The top ${k} ${k===1?"is":"are"} highlighted${tie?". There's a tie at the cutoff, so more than "+k+" are highlighted":""}.</p>
+    ${can&&owner?`<div class="toolbar"><button class="btn ghost" data-act="cv-phase" data-id="${v.id}" data-to="voting">Reopen voting</button><button class="btn ghost danger" data-act="cv-del" data-id="${v.id}">Delete</button></div>`:""}`}
+  const notes=Object.values(v.notes||{}).filter(n=>n&&n.text).sort((a,b)=>(a.at||"").localeCompare(b.at||""));
+  return`<article class="poll cv"><div class="sub parts"><span class="chip ${phase==="voting"?"accent":phase==="closed"?"good":"gold"}">${label(CV_PHASE,phase)}</span><span>Started by ${esc(v.byName||"council")}</span></div><h3>${esc(v.title)}</h3>${v.details?`<p style="margin:0;white-space:pre-wrap">${esc(v.details)}</p>`:""}${body}
+  <details class="cv-notes" ${notes.length?"open":""}><summary>Feedback (${notes.length})</summary>${notes.map(n=>`<div class="reply"><b>${esc(n.name||"")}</b> ${esc(n.text)}</div>`).join("")}${can?`<div class="reply-form"><input id="cvn-${v.id}" aria-label="Your feedback" placeholder="Add feedback for the council" maxlength="400"><button class="btn sm" data-act="cv-note" data-id="${v.id}">Send</button></div>`:""}</details></article>`}
+function cvotesView(){const vs=[...S.cvotes].sort((a,b)=>(b.created||"").localeCompare(a.created||"")),open=vs.filter(v=>v.phase!=="closed"),done=vs.filter(v=>v.phase==="closed");
+  return head("Brainstorm together, then vote. Only Student Council sees this.","Council votes",W()&&council()?`<button class="btn primary" data-act="cv-new">+ New council vote</button>`:"")+
+  (open.length?`<div class="polls">${open.map(cvCard).join("")}</div>`:empty("Nothing open right now","Start one: collect Spirit Week day ideas from everyone, then vote on the five you want.","cv-new","Start a council vote",W()&&council()))+
+  (done.length?`<section class="panel"><h2>Past votes</h2><div class="polls" style="margin-top:12px">${done.map(cvCard).join("")}</div></section>`:"")}
+function cvForm(){openForm({title:"New council vote",submitLabel:"Start collecting ideas",note:"Every council member can add ideas and feedback. When you're ready, start the vote.",
+  fields:[{id:"title",label:"What are we deciding?",required:true,full:true,placeholder:"e.g. Spirit Week days"},{id:"picks",label:"How many does each member pick?",type:"number"},{id:"details",label:"Details (optional)",type:"textarea",placeholder:"e.g. We need five days, Monday to Friday."}],values:{picks:5},
+  submit:v=>save(()=>col("cvotes").add({title:v.title,details:v.details,picks:Math.max(1,Math.round(Number(v.picks)||1)),phase:"ideas",ideas:{},votes:{},notes:{},by:me.id,byName:myName(),created:new Date().toISOString()}),"Council vote started",["started a council vote:","settings",v.title])})}
+
 /* ---------- proposals ---------- */
 function tally(p){const v=p.votes||{},t={aye:0,nay:0,abstain:0};for(const k in v)if(t[v[k]]!=null&&isApproved(S.members.find(m=>m.id===k)))t[v[k]]++;return t}
 function nextNumber(){const yy=String(new Date().getFullYear()).slice(2);const n=S.proposals.filter(p=>(p.number||"").startsWith("P-"+yy)).length+1;return`P-${yy}-${pad(n)}`}
@@ -3341,6 +3382,15 @@ document.addEventListener("click",async e=>{
     case"room-book":return bookForm();
     case"room-cancel":{const d=S.bookings.find(x=>x.id===b.dataset.uid);if(!d)return;const it={...d.items};delete it[id];return save(()=>db.doc("bookings/"+d.id).set({items:it}),"Booking cancelled")}
     case"perms-save":{const P={};document.querySelectorAll("table.perms input[data-role]").forEach(el=>{(P[el.dataset.role]=P[el.dataset.role]||[]);if(el.checked)P[el.dataset.role].push(el.dataset.cap)});return save(()=>cfgSet(c=>{c.perms=P}),"Permissions saved",["changed who can do what","settings",""])}
+    case"cv-new":return cvForm();
+    case"cv-add":{const inp=$("#cvi-"+id),t=inp.value.trim();if(!t){inp.focus();return}inp.value="";return save(()=>col("cvotes").doc(id).update({ideas:{["i"+cvKey()]:{text:t.slice(0,120),by:me.id,name:myName(),at:new Date().toISOString()}}}))}
+    case"cv-rm":return save(()=>col("cvotes").doc(id).update({ideas:{[b.dataset.k]:{text:""}}}),"Idea removed");
+    case"cv-vote":{const v=S.cvotes.find(x=>x.id===id);if(!v)return;const k=Number(v.picks)||1,key=b.dataset.k;let mine=[...(((v.votes||{})[me.id])||[])];
+      if(mine.includes(key))mine=mine.filter(x=>x!==key);else if(k===1)mine=[key];else if(mine.length>=k){toast(`You can pick ${k}. Unpick one first.`);return}else mine.push(key);
+      return save(()=>col("cvotes").doc(id).update({votes:{[me.id]:mine}}))}
+    case"cv-phase":{const v=S.cvotes.find(x=>x.id===id),to=b.dataset.to;return save(()=>col("cvotes").doc(id).update({phase:to}),to==="voting"?"Voting is open":to==="closed"?"Results are in":"Back to collecting ideas",[to==="voting"?"opened voting on":to==="closed"?"closed voting on":"reopened ideas for","settings",v&&v.title])}
+    case"cv-note":{const inp=$("#cvn-"+id),t=inp.value.trim();if(!t){inp.focus();return}inp.value="";return save(()=>col("cvotes").doc(id).update({notes:{["n"+cvKey()]:{text:t.slice(0,400),by:me.id,name:myName(),at:new Date().toISOString()}}}))}
+    case"cv-del":{const v=S.cvotes.find(x=>x.id===id);if(!v||!confirm(`Delete “${v.title}” and all its votes?`))return;return save(()=>col("cvotes").doc(id).delete(),"Deleted",["deleted the council vote","settings",v.title])}
     case"rooms-edit":return openForm({title:"Rooms students can book",fields:[{id:"rooms",label:"One room per line",type:"textarea",placeholder:"Room 512\nLibrary study room\nBlack box theater"}],values:{rooms:(CFG.rooms||[]).join("\n")},submit:v=>save(()=>cfgSet(c=>{c.rooms=[...new Set(v.rooms.split("\n").map(x=>x.trim()).filter(Boolean))].slice(0,40)}),"Rooms saved")});
     case"archive-open":return openArchive(+b.dataset.to);
     case"archive-close":return closeArchive();
@@ -3599,7 +3649,7 @@ const PAGE_NEEDS={
   myspace:{wins:"all",posts:"all"},
 };
 /* council: approvals, settlement and the summary need everyone's documents */
-const BASE_COUNCIL={plans:"all",submissions:"all",clubdrafts:"all",suggestions:"all",done:"all",scores:"all",picks:"all",tasks:"all",claims:"all",members:"all",games:"all",gamekeys:"all",events:"all",bulletin:"all",proposals:"all",meetings:"all"};
+const BASE_COUNCIL={plans:"all",cvotes:"all",submissions:"all",clubdrafts:"all",suggestions:"all",done:"all",scores:"all",picks:"all",tasks:"all",claims:"all",members:"all",games:"all",gamekeys:"all",events:"all",bulletin:"all",proposals:"all",meetings:"all"};
 const COUNCIL_PAGES={overview:{gamevotes:"all",plays:"all",signups:"all",replies:"all",history:"all"},history:{history:"all"},members:{spaces:"all",roster:"all"},home:{signups:"all",replies:"all",gamevotes:"all",plays:"all"},play:{gamevotes:"all",plays:"all",predictions:"all",challenges:"all"},clubs:{clubs:"all",clubposts:"all"},club:{clubs:"all",clubposts:"all",picks:"all"}};
 function ensureData(){if(!db)return;const v=shownView()||"home",need={...BASE_STUDENT,...(PAGE_NEEDS[v]||{})};
   /* everyone's votes only on days a This or That or photo game still needs its live tally */
