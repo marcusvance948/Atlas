@@ -30,20 +30,19 @@ A community site for high school students at Avenues The World School, run by St
 
 ## Publishing a change (exact steps)
 
+Publishing is automatic: every merge into `main` runs `.github/workflows/publish.yml`, which rebuilds with `tools/build_site.py` and deploys `site/` to GitHub Pages (Settings → Pages → Source: GitHub Actions). The `pages` branch is no longer used. To republish without a change: Actions → Publish site → Run workflow.
+
 ```bash
-# 1. clone if the folder is gone (the old one was a temporary session folder)
 git clone https://github.com/marcusvance948/Atlas.git && cd Atlas
 # owner: run `gh auth switch -u marcusvance948` first (this repo belongs to that GitHub account; management89/Atlas and alexanderh8809-oss/Atlas are archived older copies)
-
-# 2. after editing stuco-hub.html
+git switch -c <branch>
+# after editing stuco-hub.html
 python3 tools/build_site.py
 git add -A && git commit -m "…"      # end messages with the Co-Authored-By line
-SPLIT=$(git subtree split --prefix site)
-git push origin main "${SPLIT}:refs/heads/pages"   # owner only; force-push is blocked by the ruleset
-# collaborators instead: git push origin <branch> && gh pr create --base main
+git push origin <branch> && gh pr create --base main
+# the owner approves and merges; the site updates a couple of minutes later
 ```
 
-- In zsh, write `"${SPLIT}:refs/…"` with braces: `"$SPLIT:r…"` breaks because `:r` is a zsh modifier.
 - The live site updates within a minute or two. Check with `curl -s https://marcusvance948.github.io/Atlas/ | grep -c <new function name>`.
 - GitHub sign-in is through `gh` (keychain). Never handle the president's passwords or tokens.
 - Then republish the claude.ai artifact from `stuco-hub.html` (pass `tools/artifact-capabilities.json` only if rules changed).
@@ -94,7 +93,7 @@ Serve a copy locally (`python3 -m http.server`), add a doctype/viewport wrapper,
 ## Open items
 
 - President still to do: publish `firestore.rules` again (new `plans` rule for the council calendar); install `tools/nightly`, or if it is already installed paste the new `Code.gs` and run `setup()` again (adds the 10-minute trigger) (then add the Web Push key in MySpace); install `tools/calendar-feed`; publish the latest `firestore.rules`; import the real student list; test that school Google accounts can sign in (unknown; if blocked, the list needs personal emails); set up bookable rooms; install the Google Slides script.
-- Possible next steps: rebrand the visible name from "Avenues Student Hub" to **Atlas**; Google Search Console verification; automatic publishing on merge; move saved opportunities from the browser to the account.
+- Possible next steps: rebrand the visible name from "Avenues Student Hub" to **Atlas**; Google Search Console verification; move saved opportunities from the browser to the account.
 - A GitHub repo `AlexanderHuangAvenuesPresident/Avenues-Student-Hub` exists but is empty and unused. Collaborators send pull requests to `marcusvance948/Atlas`.
 
 ## How the president works
