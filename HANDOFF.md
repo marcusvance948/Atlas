@@ -1,6 +1,6 @@
 # Handoff: Atlas (Avenues Student Hub)
 
-Everything a new session needs to keep building this site. Last updated 2026-11-17 (council calendar, 10th Avenue street scene, speed pass).
+Everything a new session needs to keep building this site. Last updated 2026-11-20 (one navigation pattern everywhere: top bar, banner tabs, one footer; before that 2026-11-17: council calendar, 10th Avenue street scene, speed pass).
 
 ## What it is
 
@@ -49,9 +49,10 @@ gh pr merge --merge   # the site updates a couple of minutes later
 
 ## How the app is organized
 
-- **Student tabs (4), no third level:** Today (`#home`: short pixel banner with a greeting, three live cards, one merged "Coming up" list of events, deadlines, sign-up closings, opportunity deadlines and private reminders, then announcements, the community feed with stories, Grade Race, birthdays, playlists, photo belt), Explore (Events with a Month view, Clubs, Opportunities), Play (one page: today's game, challenges, predictions, leaderboard; empty sections hide for students), StuCo (one page, side menu: Feedback, Polls, Lost and found, Our work). MySpace (`#myspace`) opens from the avatar in the top bar. `#bulletin` is the full announcements archive (under Today).
+- **Student tabs (4), no third level:** Today (`#home`: short pixel banner with a greeting, three live cards, one merged "Coming up" list of events, deadlines, sign-up closings, opportunity deadlines and private reminders, then announcements, the community feed with stories, Grade Race, birthdays, playlists, photo belt), Explore (Events with a Month view, Clubs, Opportunities), Play (one page: today's game, challenges, predictions, leaderboard; empty sections hide for students), StuCo (one page, banner tabs that jump to its sections: Feedback, Polls, Lost and found, Our work). MySpace (`#myspace`) opens from the avatar in the top bar. `#bulletin` is the full announcements archive (under Today).
 - **Old links:** `ALIAS` maps retired names (hub, community, create, collabs, life, connect, explore, challenges, dares, leaderboard) to their new place and section; keep it when renaming routes.
-- **Council view** (switch in the menu): Overview, Calendar, Tasks, Proposals, Votes, Attendance, plus edit buttons everywhere; Members and History only for the president (`presOnly`; Members stays open to someone still setting up a profile). `council()` is false in student preview. Rules still let any council member read `history` (logging needs it), so this is a UI limit.
+- **Navigation, one pattern everywhere:** every page (both views) has the same top bar (`siteNav()`: brand, core tabs, then `homeAuth()` with the view switch, bell, avatar and sign-in/out) over the pixel banner. Second-level navigation is always tabs in the banner, built in one place, `sectionTabs()` (Explore: Events, Clubs, Opportunities, Office hours; StuCo; and the council sections, with count badges). One footer, `siteFoot()`, on every page; in council view it also shows the save status (`#status`, updated by `setStatus`). Page width is one token, `--page` (1220px), shared by the top bar, banner title, content and footer so they line up.
+- **Council view** (switch in the top bar: "Student view" / "Council view"): a fifth core tab, **Council**, whose sections (Overview, Calendar, Tasks, Proposals, Votes, Attendance, plus Members and History for the president) are banner tabs, plus edit buttons everywhere. Members and History show only for the president (`presOnly`; Members stays open to someone still setting up a profile). `council()` is false in student preview. Rules still let any council member read `history` (logging needs it), so this is a UI limit.
 - **Overview** (`overview`): next meeting; **Needs you** (council votes and proposals you haven't voted on, tasks to accept, then approvals for the areas your position covers via `capOK`); **Your list this week** (your council calendar items and tasks for the next 7 days); events this week; open and overdue tasks.
 - **Routing:** `ROUTES` maps hash names to tabs; `VIEWFN` in `render()` maps them to view functions. `head(context,title,actions)` puts the title in the pixel banner.
 - **Pixel scene:** animated Avenues building (time of day, season, plane with Aviator name, truck with latest news, birthday banner) in the Today banner and every page banner. The street is the real corner, 10th Avenue and West 25th Street (`drawBackdrop`): bike lane, parking lane with school buses, two lanes of one-way traffic, ladder crosswalks, the High Line over 25th Street, the glass building across the street, street signs. A traffic light runs on a 30-second cycle (`light()` in `startScene`): cars and bikes stop at the line (`drive`), people cross on the walk signal. It draws at 30 frames a second and pauses when scrolled out of view.
@@ -77,7 +78,7 @@ gh pr merge --merge   # the site updates a couple of minutes later
 
 ## Council votes
 
-`#cvotes` (council menu: Votes; `cvotesView`, `cvCard`, `cvForm`). One `cvotes/<id>` doc per vote with phase `ideas` → `voting` → `closed`. `ideas`, `votes` (uid → [idea keys]) and `notes` are maps so merge-updates from different members don't collide; removing an idea blanks its text. Each member picks up to `picks`. Only the starter or the president changes the phase or deletes the vote (Delete shows at every stage). Rule: `cvotes` read/write `isCouncil()`.
+`#cvotes` (Council banner tab: Votes; `cvotesView`, `cvCard`, `cvForm`). One `cvotes/<id>` doc per vote with phase `ideas` → `voting` → `closed`. `ideas`, `votes` (uid → [idea keys]) and `notes` are maps so merge-updates from different members don't collide; removing an idea blanks its text. Each member picks up to `picks`. Only the starter or the president changes the phase or deletes the vote (Delete shows at every stage). Rule: `cvotes` read/write `isCouncil()`.
 
 ## Permissions by position
 
