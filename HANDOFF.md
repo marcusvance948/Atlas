@@ -75,6 +75,10 @@ git push origin main "${SPLIT}:refs/heads/pages"   # owner only; force-push is b
 - **Instagram (@avenuesed):** not automated. Instagram has no public feed access; it needs a token from the account owner (the school's communications team) through Meta's Instagram API.
 - **Data per person** lives in `<collection>/<uid>` documents with an `items` map (suggestions, signups, lostfound, bookings, gamevotes, replies…), written only by that person.
 
+## Council votes
+
+`#cvotes` (council menu: Votes; `cvotesView`, `cvCard`, `cvForm`). One `cvotes/<id>` doc per vote with phase `ideas` → `voting` → `closed`. `ideas`, `votes` (uid → [idea keys]) and `notes` are maps so merge-updates from different members don't collide; removing an idea blanks its text. Each member picks up to `picks`. Only the starter or the president changes the phase. Rule: `cvotes` read/write `isCouncil()`.
+
 ## Permissions by position
 
 - The president sets **Who can do what** on the Members page (`permsPanel`): one row per position, one column per area in `CAPS`. Saved as `config/access.perms = {position: [caps]}`. A position with no saved row gets `DEFAULT_CAPS` (everything except `tasks`). The president always has everything.
